@@ -5,7 +5,7 @@
 //   :Analysis    id, status, stage, stageMessage, commitSha, coverage (JSON string),
 //                error, createdAt, startedAt, finishedAt, schemaVersion
 //   :File        id, path, module, lines, bytes, hash, fanIn, fanOut,
-//                skipReason, skipDetail, role, roleSource
+//                skipReason, skipDetail, role, roleSource, exports
 //   :Route       id, method, path, line
 //   :Insight     id, body, createdAt
 //

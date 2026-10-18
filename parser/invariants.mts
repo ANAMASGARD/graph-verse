@@ -137,6 +137,12 @@ export function assertParseResult(result: ParseResult): void {
     if (file.fanOut !== edgeCount(result.edges, file.path, "out")) {
       throw new Error(`fan-out does not match edges for ${file.path}`);
     }
+    const exportNames = new Set<string>();
+    for (const name of file.exports) {
+      if (name.trim() === "") throw new Error(`export name is empty: ${file.path}`);
+      if (exportNames.has(name)) throw new Error(`duplicate export name on ${file.path}: ${name}`);
+      exportNames.add(name);
+    }
   }
   if (folders.size !== coverage.folders) {
     throw new Error("folder count does not match parsed files");

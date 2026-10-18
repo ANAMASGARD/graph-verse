@@ -5,6 +5,7 @@ import path from "node:path";
 import { selectAdapter, type AdapterFile } from "./adapters.mts";
 import { assertNever } from "./assert-never.mts";
 import { clearCompilerOptionsCache } from "./compiler-options.mts";
+import { extractExports } from "./extract-exports.mts";
 import { extractImports, nonLiteralReason, type RawImport } from "./extract-imports.mts";
 import { countLines, folderOf, moduleIdOf } from "./paths.mts";
 import { clearResolutionCache, resolveSpecifier, type ResolveContext } from "./resolve-import.mts";
@@ -153,6 +154,7 @@ function addOutcome(coverage: CoverageReport, outcome: ImportOutcome): void {
 function addKind(coverage: CoverageReport, kind: EdgeKind, outcome: ImportOutcome): void {
   switch (kind) {
     case "IMPORTS":
+    case "REQUIRES":
       return;
     case "RE_EXPORTS":
       coverage.reexportsFound += 1;
@@ -286,6 +288,7 @@ export function parseRepository(directory: string): ParseResult {
       fanOut: fanOut.get(file.path) ?? 0,
       role: role.role,
       roleSource: role.roleSource,
+      exports: extractExports(file.path, file.source),
     };
   });
   files.sort((left, right) => left.path.localeCompare(right.path));

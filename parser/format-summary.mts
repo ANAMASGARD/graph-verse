@@ -23,6 +23,7 @@ export function formatParseSummary(result: ParseResult): string {
   lines.push(`  IMPORTS ${countKind(result, "IMPORTS")}`);
   lines.push(`  RE_EXPORTS ${countKind(result, "RE_EXPORTS")}`);
   lines.push(`  DYNAMIC_IMPORT ${countKind(result, "DYNAMIC_IMPORT")}`);
+  lines.push(`  REQUIRES ${countKind(result, "REQUIRES")}`);
   lines.push(`routes: ${result.routes.length}`);
   for (const route of result.routes) {
     lines.push(`  ${route.method} ${route.pattern} — ${route.file}:${route.line}`);

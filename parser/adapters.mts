@@ -1,7 +1,9 @@
 // Framework knowledge plugs in here. Detection order is first match wins.
-// Next comes before React because a Next app also imports React. The
-// fallback is last because it always applies.
+// Next and Nest come before Express because both can sit on top of it.
+// Express comes before React because an Express app may also import React.
+// The fallback is last because it always applies.
 
+import { expressAdapter } from "./adapters/express.mts";
 import { nestAdapter } from "./adapters/nest.mts";
 import { nextAdapter } from "./adapters/next.mts";
 import { reactAdapter } from "./adapters/react.mts";
@@ -57,7 +59,13 @@ const fallbackAdapter: FrameworkAdapter = {
   },
 };
 
-const adapters: readonly FrameworkAdapter[] = [nextAdapter, nestAdapter, reactAdapter, fallbackAdapter];
+const adapters: readonly FrameworkAdapter[] = [
+  nextAdapter,
+  nestAdapter,
+  expressAdapter,
+  reactAdapter,
+  fallbackAdapter,
+];
 
 export function selectAdapter(files: readonly AdapterFile[]): FrameworkAdapter {
   for (const adapter of adapters) {

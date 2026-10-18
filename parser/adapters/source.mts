@@ -36,6 +36,21 @@ export function importedSpecifiers(sourceFile: ts.SourceFile): string[] {
       ts.isStringLiteral(node.arguments[0])
     ) {
       specifiers.push(node.arguments[0].text);
+    } else if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "require" &&
+      node.arguments[0] !== undefined &&
+      (ts.isStringLiteral(node.arguments[0]) || ts.isNoSubstitutionTemplateLiteral(node.arguments[0]))
+    ) {
+      specifiers.push(node.arguments[0].text);
+    } else if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference) &&
+      (ts.isStringLiteral(node.moduleReference.expression) ||
+        ts.isNoSubstitutionTemplateLiteral(node.moduleReference.expression))
+    ) {
+      specifiers.push(node.moduleReference.expression.text);
     }
     ts.forEachChild(node, visit);
   };

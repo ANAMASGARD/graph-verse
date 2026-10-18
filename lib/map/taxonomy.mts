@@ -23,6 +23,7 @@ const RAIL_ORDER: Record<string, readonly string[]> = {
     "Config",
   ],
   NestJS: ["Controllers", "Services", "Modules", "Entities"],
+  Express: ["Routers", "Controllers", "Services", "Models", "Middleware"],
   React: ["Components", "Hooks"],
 };
 

@@ -261,7 +261,7 @@ export async function loadMap(
   const edgeRows = await queryRows<Record<string, unknown>>(
     graph,
     `
-    MATCH (a:Analysis {id: $id})-[:HAS_FILE]->(from:File)-[:IMPORTS|RE_EXPORTS|DYNAMIC_IMPORT]->(to:File)<-[:HAS_FILE]-(a)
+    MATCH (a:Analysis {id: $id})-[:HAS_FILE]->(from:File)-[:IMPORTS|RE_EXPORTS|DYNAMIC_IMPORT|REQUIRES]->(to:File)<-[:HAS_FILE]-(a)
     RETURN from.path AS fromPath, to.path AS toPath
     `,
     { id: analysisId },
@@ -326,6 +326,7 @@ export async function storeParseResult(
       fanOut: file.fanOut,
       role: file.role,
       roleSource: file.roleSource,
+      exports: file.exports,
       skipReason: null,
       skipDetail: null,
     })),
@@ -341,6 +342,7 @@ export async function storeParseResult(
       fanOut: 0,
       role: "",
       roleSource: "",
+      exports: [],
       skipReason: file.reason,
       skipDetail: file.detail,
     })),
@@ -361,6 +363,7 @@ export async function storeParseResult(
           f.fanOut = file.fanOut,
           f.role = file.role,
           f.roleSource = file.roleSource,
+          f.exports = file.exports,
           f.skipReason = file.skipReason,
           f.skipDetail = file.skipDetail
       MERGE (a)-[:HAS_FILE]->(f)
@@ -463,6 +466,13 @@ function edgeWrite(kind: EdgeKind): string {
         UNWIND $edges AS edge
         MATCH (from:File {id: edge.fromId}), (to:File {id: edge.toId})
         MERGE (from)-[r:DYNAMIC_IMPORT]->(to)
+        SET r.specifier = edge.specifier, r.line = edge.line, r.typeOnly = edge.typeOnly
+      `;
+    case "REQUIRES":
+      return `
+        UNWIND $edges AS edge
+        MATCH (from:File {id: edge.fromId}), (to:File {id: edge.toId})
+        MERGE (from)-[r:REQUIRES]->(to)
         SET r.specifier = edge.specifier, r.line = edge.line, r.typeOnly = edge.typeOnly
       `;
     default: {

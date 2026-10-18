@@ -46,6 +46,17 @@ function booleanField(value: Record<string, unknown>, key: string, at: string): 
   return field;
 }
 
+function stringList(value: Record<string, unknown>, key: string, at: string): string[] {
+  const field = value[key];
+  if (!Array.isArray(field)) fail(`${at}.${key}`, "must be an array");
+  return field.map((item, index) => {
+    if (typeof item !== "string" || item.trim() === "") {
+      fail(`${at}.${key}[${index}]`, "must be a non-empty string");
+    }
+    return item;
+  });
+}
+
 function stringOrNull(value: Record<string, unknown>, key: string, at: string): string | null {
   const field = value[key];
   if (field === null) return null;
@@ -60,7 +71,9 @@ function arrayField(value: Record<string, unknown>, key: string, at: string): un
 }
 
 function edgeKind(value: unknown, at: string): EdgeKind {
-  if (value === "IMPORTS" || value === "RE_EXPORTS" || value === "DYNAMIC_IMPORT") return value;
+  if (value === "IMPORTS" || value === "RE_EXPORTS" || value === "DYNAMIC_IMPORT" || value === "REQUIRES") {
+    return value;
+  }
   fail(at, "has an unknown edge kind");
 }
 
@@ -93,6 +106,7 @@ function parsedFile(value: unknown, at: string): ParsedFile {
     fanOut: numberField(row, "fanOut", at),
     role: stringField(row, "role", at),
     roleSource: stringField(row, "roleSource", at),
+    exports: stringList(row, "exports", at),
   };
 }
 

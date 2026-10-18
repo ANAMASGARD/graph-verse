@@ -100,9 +100,13 @@ function importTypeArgument(node: ts.ImportTypeNode): ts.Node | null {
   return argument;
 }
 
+function isRequireCall(node: ts.Node): node is ts.CallExpression {
+  return ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "require";
+}
+
 /**
- * `require()` and `import = require()` are intentionally not collected.
- * Phase 9 adds them; counting them now would change the coverage denominator.
+ * `require()` is its own edge. `import x = require("y")` is TypeScript import
+ * syntax, and the `require` there is not a call, so the two are not recorded twice.
  */
 export function extractImports(filePath: string, sourceText: string): RawImport[] {
   const sourceFile = ts.createSourceFile(
@@ -153,13 +157,36 @@ export function extractImports(filePath: string, sourceText: string): RawImport[
       } else {
         pushLiteral(imports, sourceFile, node, "DYNAMIC_IMPORT", argument, false);
       }
+    } else if (isRequireCall(node)) {
+      const argument = node.arguments[0];
+      if (argument === undefined) {
+        imports.push({
+          kind: "REQUIRES",
+          specifier: null,
+          display: displayText(sourceFile, node),
+          line: lineOf(sourceFile, node),
+          typeOnly: false,
+          literal: false,
+        });
+      } else {
+        pushLiteral(imports, sourceFile, node, "REQUIRES", argument, false);
+      }
     } else if (ts.isImportTypeNode(node)) {
       const argument = importTypeArgument(node);
       if (argument !== null) {
         pushLiteral(imports, sourceFile, node, "IMPORTS", argument, true);
       }
     } else if (ts.isImportEqualsDeclaration(node)) {
-      // require-style import equals stays out until phase 9.
+      if (ts.isExternalModuleReference(node.moduleReference)) {
+        pushLiteral(
+          imports,
+          sourceFile,
+          node,
+          "IMPORTS",
+          node.moduleReference.expression,
+          node.isTypeOnly,
+        );
+      }
     } else {
       // Other nodes carry no import specifier.
     }
@@ -178,6 +205,8 @@ export function nonLiteralReason(kind: EdgeKind): string {
       return "re-export specifier is not a string literal";
     case "DYNAMIC_IMPORT":
       return "dynamic import specifier is not a string literal";
+    case "REQUIRES":
+      return "require specifier is not a string literal";
     default:
       return assertNever(kind, "edge kind");
   }

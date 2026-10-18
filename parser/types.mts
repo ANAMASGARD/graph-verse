@@ -3,7 +3,7 @@
 
 export const PARSE_RESULT_VERSION = 1 as const;
 
-export type EdgeKind = "IMPORTS" | "RE_EXPORTS" | "DYNAMIC_IMPORT";
+export type EdgeKind = "IMPORTS" | "RE_EXPORTS" | "DYNAMIC_IMPORT" | "REQUIRES";
 
 export type ImportOutcome = "resolved" | "external" | "excluded" | "unresolved";
 
@@ -18,6 +18,8 @@ export interface ParsedFile {
   fanOut: number;
   role: string;
   roleSource: string;
+  /** Names written onto `module.exports` or `exports`. Empty when the file has none. */
+  exports: string[];
 }
 
 export interface SkippedFile {
