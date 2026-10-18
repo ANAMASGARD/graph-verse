@@ -4,7 +4,9 @@ import { createHash } from "node:crypto";
 
 import { traceable } from "langsmith/traceable";
 
+import { pathsShownFromUnknown } from "../../evals/invented-path.mts";
 import { isModelRole, MODEL_ROLES, type ModelRole } from "./model-roles";
+import { noteInventedPaths } from "./path-feedback";
 import { ai, MODELS, traceConfig } from "./client";
 import {
   CLASSIFY_SYSTEM,
@@ -43,10 +45,10 @@ export async function explainFile(input: FileInput, deps: { cache: Cache; source
   const run = traceable(async (question: FileInput): Promise<Explanation> => {
     const key = cacheKey("explain-file", model, question);
     const hit = await deps.cache.read(key);
-    if (hit !== null) return { body: hit, model, cached: true };
-    const body = await complete(model, EXPLAIN_FILE_SYSTEM, explainFileMessage(question, capped(await deps.source())));
+    if (hit !== null) return finish(hit, model, true, question);
+    const body = await completePrompt(model, EXPLAIN_FILE_SYSTEM, explainFileMessage(question, capped(await deps.source())));
     await deps.cache.write({ key, task: "explain-file", model, body });
-    return { body, model, cached: false };
+    return finish(body, model, false, question);
   }, traceConfig("explain-file"));
   return run(input);
 }
@@ -56,10 +58,10 @@ export async function explainFolder(input: FolderInput, deps: { cache: Cache }):
   const run = traceable(async (question: FolderInput): Promise<Explanation> => {
     const key = cacheKey("explain-folder", model, question);
     const hit = await deps.cache.read(key);
-    if (hit !== null) return { body: hit, model, cached: true };
-    const body = await complete(model, EXPLAIN_FOLDER_SYSTEM, explainFolderMessage(question));
+    if (hit !== null) return finish(hit, model, true, question);
+    const body = await completePrompt(model, EXPLAIN_FOLDER_SYSTEM, explainFolderMessage(question));
     await deps.cache.write({ key, task: "explain-folder", model, body });
-    return { body, model, cached: false };
+    return finish(body, model, false, question);
   }, traceConfig("explain-folder"));
   return run(input);
 }
@@ -119,7 +121,7 @@ function readRole(content: string | null): string {
   return role;
 }
 
-async function complete(model: string, system: string, user: string): Promise<string> {
+export async function completePrompt(model: string, system: string, user: string): Promise<string> {
   const response = await ai().chat.completions.create({
     model,
     messages: [
@@ -134,6 +136,12 @@ async function complete(model: string, system: string, user: string): Promise<st
     throw new Error(`${model} returned an empty answer (finish reason: ${response.choices[0]?.finish_reason ?? "none"})`);
   }
   return body;
+}
+
+async function finish(body: string, model: string, cached: boolean, shown: unknown): Promise<Explanation> {
+  const paths = pathsShownFromUnknown(shown);
+  if (paths !== null) await noteInventedPaths(body, paths);
+  return { body, model, cached };
 }
 
 function capped(source: string): string {

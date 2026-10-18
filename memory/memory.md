@@ -1,6 +1,6 @@
 # Graph Verse — session memory
 
-Last updated after phase 10 completion pass (actions, re-analyse, fixes).
+Last updated after phase 11 (evals: invented-path, role accuracy, prompt versions).
 
 ## Product
 
@@ -38,7 +38,8 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 | **8** Next, Nest, and React adapters; route table; rail per framework | Built; user runs the browser checks |
 | **9** `require()`, CommonJS export names, Express adapter | Built; user runs the browser checks |
 | **10** Explain, cache, trace, classify | Built and pushed; user runs acceptance in browser |
-| **11+** | Not started |
+| **11** Evals: invented-path, role accuracy, prompt versions | Built; user runs the three scripts |
+| **12+** | Not started |
 
 ## Parser
 
@@ -86,7 +87,17 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - UI: `explanation-panel.tsx` (staleness + Re-analyse, tracing line, label outcome), `explanation-text.tsx` (inline code, bullets, bold; paths → map selection). Client `explorer.tsx` keeps explanations and freshness per file/folder key. Map category dim uses `modelRoles` in `map-canvas.tsx`.
 - Env in `.env.local` (not committed): `OPENAI_API_KEY`; optional tracing `LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` (EU: `https://eu.api.smith.langchain.com`), `LANGSMITH_PROJECT=graph-verse`. Pinned models verified listed on OpenAI account.
 - Deps: `openai`, `langsmith`. AiCache index applied via `npm run db:apply-schema --from-env` on seed org graphs.
-- **Checks:** `tsc` and `npm run build` pass. `npm run lint` fails: `eslint-config-next@14` lacks ESM export for `core-web-vitals` that `eslint.config.mjs` imports (Next 16 / ESLint 9 mismatch; not fixed in phase 10).
+- **Checks:** `tsc` and `npm run build` pass. `npm run lint` fails: `eslint-config-next@14` lacks ESM export for `core-web-vitals` that `eslint.config.mjs` imports (Next 16 / ESLint 9 mismatch; not fixed).
+
+## Evals (phase 11)
+
+- Scripts load `.env` then `.env.local` via `evals/env.mts` (same precedence as Next: local overrides, already-set process env wins). `evals/register.mjs` lets plain Node import the server modules: stubs `server-only`, adds `.ts`/`.mts` to extensionless imports.
+- **Invented-path** (`evals/invented-path.mts`): deterministic. A token with a source extension (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.mts`, `.cts`, `.json`) must be in the path set the model was shown (the file or folder, plus every neighbour). Score is 1 or 0. Not a model grading a model.
+- `npm run eval:paths` — splice fixture first (catches `lib/not-a-real-file.ts`), then scores recent `explain-file` / `explain-folder` root runs in `LANGSMITH_PROJECT` via `client.runs.query` (last 90 days). Failures print the invented token and the shown set.
+- Live: `lib/ai/path-feedback.ts`, called from `explainFile` / `explainFolder` (cache hit and miss), writes LangSmith feedback key `invented_path` on the trace. A feedback failure is logged and does not fail Explain.
+- **Role accuracy:** `npm run eval:roles -- <directory>`. Parses with the real parser. Held-out set is only conventional roles the classifier may return: Components→component, Hooks→hook, Config→config, Services→service, Models→model. Pages, routes, controllers are excluded. Role is not in the classify prompt. Needs **≥ 30** files or it exits. This repo had **19** (18 Components, 1 Config) on 2026-10-18, so it correctly refused. No FalkorDB cache write.
+- **Prompt versions:** current system prompt stays in `lib/ai/prompts.ts`. Retired prompt is only `evals/retired-prompt.mts` (not imported by the app). `npm run eval:prompts -- <directory>` builds LangSmith dataset `graph-verse-explain` (up to 8 files with a neighbour, source ≤ 24_000 chars; `--refresh` replaces it) and runs two experiments, `explain-current` and `explain-retired`. Each is scored with invented-path (exact) and `useful` from `MODELS.classify`. The script says usefulness is a model's opinion, prints both scores, the delta, and the experiment URLs.
+- **Blocker seen:** `npm run eval:paths` splice passed, then LangSmith **403** on listing runs. Org key needs `LANGSMITH_WORKSPACE_ID` in `.env.local` (SDK reads that name) before trace listing or the prompt experiments can run.
 
 ## MCP / local
 
@@ -108,3 +119,4 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - Phase 8: five checks in `specs/phase-08.md` — Next and Nest rails and route table, three route spot-checks, generic fallback, `nextjs` only in the adapter. Re-analyse (new URL or delete the old analysis) so stored runs pick up adapters and routes.
 - Phase 9: three checks in `specs/phase-09.md`. An Express app that only `require()`s (hackathon-starter: 37 edges, 243 imports seen, Express rail, no routes). Re-analyse so stored runs pick up `REQUIRES`. `expressjs/express` draws edges but stays the fallback adapter, because that repo does not import the `express` package.
 - Phase 10: six checks in `specs/phase-10.md` — Explain, markdown subset, cache + LangSmith zero-token second run, folder explain, stale after repo move, model role on unidentified files.
+- Phase 11: four checks in `specs/phase-11.md`. Splice check passed in the terminal. Real-trace score, role accuracy (≥30 files), and the two prompt experiments are blocked until `LANGSMITH_WORKSPACE_ID` is set and the role script is pointed at a larger checkout than this repo.

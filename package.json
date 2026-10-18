@@ -10,7 +10,10 @@
     "parse": "node parser/cli.mts",
     "verify:falkordb": "node --env-file=.env.local scripts/verify-falkordb-connection.mjs",
     "db:apply-schema": "node --env-file=.env.local scripts/apply-graph-schema.mjs --from-env",
-    "db:seed": "node --env-file=.env.local scripts/seed-dev-graphs.mjs --from-env"
+    "db:seed": "node --env-file=.env.local scripts/seed-dev-graphs.mjs --from-env",
+    "eval:paths": "node --import ./evals/register.mjs evals/paths.mts",
+    "eval:roles": "node --import ./evals/register.mjs evals/roles.mts",
+    "eval:prompts": "node --import ./evals/register.mjs evals/prompts.mts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.17",
