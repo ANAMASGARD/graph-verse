@@ -1,6 +1,6 @@
 # Graph Verse — session memory
 
-Last updated after phase 2 + dashboard UI work (post `3115ba5`).
+Last updated after phase 3 (parser).
 
 ## Product
 
@@ -30,7 +30,16 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 |-------|--------|
 | **1** Auth, orgs, theme, shell, FalkorDB boot | Built; user runs acceptance in browser |
 | **2** Schema, org-scoped list, seed, dashboard | Built; list via fixed Cypher, no org filter in query |
-| **3+** | Not started |
+| **3** Parser: files, edges, coverage, fallback adapter | Built; terminal only |
+| **4+** | Not started |
+
+## Parser
+
+- Command: `npm run parse -- <directory> [--out result.json]`. Read back: `npm run parse -- --read result.json`.
+- Code in `parser/`. No Next, React, or FalkorDB. Uses the TypeScript compiler API already installed (the parser under ts-morph).
+- Contract is the JSON result: parsed files carry `folder`, `module`, lines, bytes, sha256, fan-in, fan-out; skipped files carry a reason; edges are `IMPORTS`, `RE_EXPORTS`, `DYNAMIC_IMPORT`. Unresolved imports stay in `coverage.failures` with a reason. Only resolved imports are edges.
+- Walks whole directories. Never enters `node_modules` or `.git`. Other exclusions come from the repo's `.gitignore`, reported per directory. `require()` is not collected.
+- Adapter list is the fallback only (`framework: none`, role `file`).
 
 ## Dashboard UI (workspace)
 
@@ -54,3 +63,4 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 
 - Phase 1: five checks in `specs/phase-01.md`.
 - Phase 2: switch orgs on dashboard; verify isolated graphs in FalkorDB per org id.
+- Phase 3 acceptance was run in the terminal (this repo, date-fns barrels, rename fixture, JSON round-trip).
