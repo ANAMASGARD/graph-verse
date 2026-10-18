@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import Script from "next/script";
 import { DASHBOARD_PATH } from "@/lib/auth-routes";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import { themeBootScript } from "@/lib/theme-script";
@@ -43,7 +44,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full bg-background font-sans text-foreground">
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        <Script id="theme-boot" strategy="beforeInteractive">
+          {themeBootScript}
+        </Script>
         <ClerkProvider
           appearance={clerkAppearance}
           taskUrls={{ "choose-organization": "/session-tasks/choose-organization" }}

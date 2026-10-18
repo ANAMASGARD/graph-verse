@@ -12,9 +12,9 @@ type ThemeToggleProps = {
 };
 
 const OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+  { value: "system", label: "system" },
+  { value: "light", label: "light" },
+  { value: "dark", label: "dark" },
 ];
 
 export function ThemeToggle({ current }: ThemeToggleProps) {
@@ -28,7 +28,7 @@ export function ThemeToggle({ current }: ThemeToggleProps) {
 
   return (
     <div
-      className="inline-flex border-2 border-border bg-card p-0.5 shadow-xs"
+      className="brutal-surface inline-flex gap-0.5 p-1 shadow-none"
       role="group"
       aria-label="Theme"
     >
@@ -40,9 +40,9 @@ export function ThemeToggle({ current }: ThemeToggleProps) {
             type="button"
             onClick={() => select(value)}
             aria-pressed={active}
-            className={`px-2 py-1 font-mono text-[10px] uppercase tracking-wide transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold lowercase transition-colors ${
               active
-                ? "bg-primary text-primary-foreground shadow-xs"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >

@@ -6,7 +6,7 @@ type FalkorDBClient = import("falkordb").FalkorDB;
 
 let clientPromise: Promise<FalkorDBClient> | null = null;
 
-/** Shared FalkorDB client. Does not select a graph — org selection comes later. */
+/** Shared FalkorDB client. Call `getOrgGraph(orgId)` before reads or writes. */
 export function getFalkorDbClient(): Promise<FalkorDBClient> {
   if (!clientPromise) {
     clientPromise = connectFalkorDb();

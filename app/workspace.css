@@ -1,0 +1,35 @@
+.workspace-root {
+  --workspace-radius: 0.75rem;
+  --workspace-gutter: clamp(1rem, 3vw, 2.5rem);
+  font-family: var(--font-workspace-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.workspace-container {
+  width: 100%;
+  max-width: none;
+  margin-inline: auto;
+  padding-inline: var(--workspace-gutter);
+}
+
+.workspace-display {
+  font-family: var(--font-workspace-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+.workspace-mono {
+  font-family: var(--font-workspace-mono), ui-monospace, monospace;
+}
+
+.brutal-surface {
+  border: 2px solid var(--border);
+  border-radius: var(--workspace-radius);
+  background: var(--card);
+  box-shadow: 3px 3px 0 0 var(--border);
+}
+
+.brutal-surface-inset {
+  border: 2px solid var(--border);
+  border-radius: calc(var(--workspace-radius) - 2px);
+  background: var(--background);
+}

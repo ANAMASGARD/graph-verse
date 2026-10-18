@@ -8,7 +8,7 @@ export function parseThemePreference(value: string | undefined): ThemePreference
   if (value && (THEME_VALUES as readonly string[]).includes(value)) {
     return value as ThemePreference;
   }
-  return "system";
+  return "dark";
 }
 
 /** Class applied on the server when the preference is unambiguous. */

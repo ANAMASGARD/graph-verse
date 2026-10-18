@@ -12,15 +12,15 @@ type AppShellProps = {
 
 export function AppShell({ children, theme }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground">
-      <header className="border-b-2 border-border bg-card shadow-sm">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b-2 border-border bg-card">
+        <div className="workspace-container flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
             <Link
               href={DASHBOARD_PATH}
-              className="font-head text-xs uppercase tracking-wide"
+              className="workspace-display text-base font-bold lowercase tracking-tight"
             >
-              Graph Verse
+              graph verse
             </Link>
             <OrganizationSwitcher
               hidePersonal
@@ -36,7 +36,7 @@ export function AppShell({ children, theme }: AppShellProps) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      <main className="workspace-container py-8">{children}</main>
     </div>
   );
 }
