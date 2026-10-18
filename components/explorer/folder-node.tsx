@@ -11,6 +11,7 @@ export type FolderRow = {
   path: string;
   label: string;
   selected: boolean;
+  hovered: boolean;
   dimmed: boolean;
 };
 
@@ -23,6 +24,7 @@ export type FolderNodeData = {
   rows: FolderRow[];
   hidden: number;
   selected: boolean;
+  hovered: boolean;
   dimmed: boolean;
   roleColor: string;
 };
@@ -35,10 +37,20 @@ export function FolderNode({ id, data }: FolderNodeProps) {
 
   return (
     <div
-      className={`map-node${data.open ? " map-node-open" : ""}${data.selected ? " map-node-selected" : ""}${data.dimmed ? " map-node-dim" : ""}`}
+      className={`map-node${data.open ? " map-node-open" : ""}${data.selected ? " map-node-selected" : ""}${data.hovered ? " map-node-hover" : ""}${data.dimmed ? " map-node-dim" : ""}`}
       style={{ borderLeftColor: data.roleColor }}
       data-folder={id}
       data-open={data.open ? "true" : "false"}
+      data-hovered={data.hovered ? "true" : "false"}
+      onMouseOver={(event) => {
+        const row = event.target instanceof Element ? event.target.closest("[data-file]") : null;
+        if (row instanceof HTMLElement && row.dataset.file) {
+          actions.hoverFile(row.dataset.file);
+          return;
+        }
+        actions.hoverNode(id);
+      }}
+      onMouseLeave={() => actions.clearHover()}
     >
       <Handle type="target" position={Position.Left} id={FOLDER_HANDLE} style={hiddenHandle} />
       <Handle type="source" position={Position.Right} id={FOLDER_HANDLE} style={hiddenHandle} />
@@ -86,9 +98,10 @@ export function FolderNode({ id, data }: FolderNodeProps) {
             <button
               key={row.path}
               type="button"
-              className={`map-node-row${row.selected ? " map-node-row-selected" : ""}${row.dimmed ? " map-node-row-dim" : ""}`}
+              className={`map-node-row${row.selected ? " map-node-row-selected" : ""}${row.hovered ? " map-node-row-hover" : ""}${row.dimmed ? " map-node-row-dim" : ""}`}
               style={{ height: ROW_HEIGHT }}
               data-file={row.path}
+              data-hovered={row.hovered ? "true" : "false"}
               onClick={(event) => {
                 event.stopPropagation();
                 actions.selectFile(row.path);

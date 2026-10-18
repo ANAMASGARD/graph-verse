@@ -8,10 +8,15 @@ export default function PreviewPage() {
   return (
     <Explorer
       repository={result.repository}
+      framework={result.adapter.framework}
+      importCount={result.coverage.importsSeen}
+      routeCount={result.routes.length}
       files={result.files.map((file) => ({
         path: file.path,
         folder: file.folder,
         role: file.role,
+        roleSource: file.roleSource,
+        lines: file.lines,
         fanIn: file.fanIn,
         fanOut: file.fanOut,
       }))}

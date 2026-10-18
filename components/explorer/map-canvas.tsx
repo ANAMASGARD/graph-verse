@@ -20,10 +20,13 @@ import {
   shownFiles,
   visibleFiles,
   visualEdges,
+  type FoldedNode,
   type FoldResult,
+  type MapFile,
   type MapSelection,
 } from "@/lib/map/fold.mts";
 import { layoutFolders } from "@/lib/map/layout.mts";
+import type { HoverTarget } from "./actions.mts";
 import { FolderNode, type FolderNodeData } from "./folder-node";
 
 const nodeTypes: NodeTypes = { folder: FolderNode };
@@ -32,11 +35,12 @@ type MapCanvasProps = {
   folded: FoldResult;
   open: ReadonlySet<string>;
   selection: MapSelection;
+  hover: HoverTarget | null;
   roleColor: string;
   onClear: () => void;
 };
 
-function MapSurface({ folded, open, selection, roleColor, onClear }: MapCanvasProps) {
+function MapSurface({ folded, open, selection, hover, roleColor, onClear }: MapCanvasProps) {
   const { fitView, getZoom } = useReactFlow();
   const previousOpen = useRef<ReadonlySet<string>>(new Set());
   const openKey = [...open].sort().join("\n");
@@ -49,6 +53,8 @@ function MapSurface({ folded, open, selection, roleColor, onClear }: MapCanvasPr
   const nodes = useMemo<Node<FolderNodeData, "folder">[]>(() => {
     return placed.map((place) => {
       const visible = visibleFiles(place.node).shown;
+      const nodeHover = folderHovered(hover, place.id, place.node, open.has(place.id), visible);
+      const rowHover = (path: string) => hover?.kind === "file" && hover.path === path;
       return {
         id: place.id,
         type: "folder",
@@ -68,18 +74,20 @@ function MapSurface({ folded, open, selection, roleColor, onClear }: MapCanvasPr
           open: open.has(place.id),
           hidden: place.node.files.length - visible.length,
           selected: selection?.kind === "node" && selection.id === place.id,
-          dimmed: nodeDimmed(selection, place.id, folded),
+          hovered: nodeHover,
+          dimmed: nodeDimmed(selection, place.id, folded) && !nodeHover && !visible.some((file) => rowHover(file.path)),
           roleColor,
           rows: visible.map((file) => ({
             path: file.path,
             label: labels.get(file.path) ?? file.path,
             selected: selection?.kind === "file" && selection.path === file.path,
-            dimmed: rowDimmed(selection, file.path, folded),
+            hovered: rowHover(file.path),
+            dimmed: rowDimmed(selection, file.path, folded) && !rowHover(file.path),
           })),
         },
       };
     });
-  }, [folded, labels, open, placed, roleColor, selection]);
+  }, [folded, hover, labels, open, placed, roleColor, selection]);
 
   const edges = useMemo<Edge[]>(() => {
     return drawn.map((edge) => {
@@ -140,6 +148,30 @@ export function MapCanvas(props: MapCanvasProps) {
       <MapSurface {...props} />
     </ReactFlowProvider>
   );
+}
+
+function folderHovered(
+  hover: HoverTarget | null,
+  id: string,
+  node: FoldedNode,
+  isOpen: boolean,
+  visible: readonly MapFile[],
+): boolean {
+  if (hover === null) return false;
+  switch (hover.kind) {
+    case "node":
+      return hover.id === id;
+    case "file": {
+      const contains = node.files.some((file) => file.path === hover.path);
+      if (!contains) return false;
+      if (!isOpen) return true;
+      return !visible.some((file) => file.path === hover.path);
+    }
+    default: {
+      const unreachable: never = hover;
+      return unreachable;
+    }
+  }
 }
 
 function nodeDimmed(selection: MapSelection, id: string, folded: FoldResult): boolean {
