@@ -1,6 +1,11 @@
-// Framework knowledge plugs in here. This phase only has the fallback, which
-// assumes nothing about the repository. Detection order is first match wins;
-// the fallback is last because it always applies.
+// Framework knowledge plugs in here. Detection order is first match wins.
+// Next comes before React because a Next app also imports React. The
+// fallback is last because it always applies.
+
+import { nestAdapter } from "./adapters/nest.mts";
+import { nextAdapter } from "./adapters/next.mts";
+import { reactAdapter } from "./adapters/react.mts";
+import { GENERIC_ROLE, GENERIC_SOURCE } from "./adapters/generic.mts";
 
 export interface AdapterFile {
   path: string;
@@ -45,14 +50,14 @@ const fallbackAdapter: FrameworkAdapter = {
       routes: [],
       roles: files.map((file) => ({
         path: file.path,
-        role: "file",
-        roleSource: "fallback",
+        role: GENERIC_ROLE,
+        roleSource: GENERIC_SOURCE,
       })),
     };
   },
 };
 
-const adapters: readonly FrameworkAdapter[] = [fallbackAdapter];
+const adapters: readonly FrameworkAdapter[] = [nextAdapter, nestAdapter, reactAdapter, fallbackAdapter];
 
 export function selectAdapter(files: readonly AdapterFile[]): FrameworkAdapter {
   for (const adapter of adapters) {

@@ -23,6 +23,15 @@ export function formatParseSummary(result: ParseResult): string {
   lines.push(`  IMPORTS ${countKind(result, "IMPORTS")}`);
   lines.push(`  RE_EXPORTS ${countKind(result, "RE_EXPORTS")}`);
   lines.push(`  DYNAMIC_IMPORT ${countKind(result, "DYNAMIC_IMPORT")}`);
+  lines.push(`routes: ${result.routes.length}`);
+  for (const route of result.routes) {
+    lines.push(`  ${route.method} ${route.pattern} — ${route.file}:${route.line}`);
+  }
+  const roleCounts = new Map<string, number>();
+  for (const file of result.files) roleCounts.set(file.role, (roleCounts.get(file.role) ?? 0) + 1);
+  const roles = [...roleCounts.entries()].sort((left, right) => left[0].localeCompare(right[0]));
+  lines.push("roles:");
+  for (const [role, count] of roles) lines.push(`  ${role}: ${count}`);
   lines.push(`imports seen: ${result.coverage.importsSeen}`);
   lines.push(`  resolved: ${result.coverage.importsResolved}`);
   lines.push(`  external: ${result.coverage.importsExternal}`);

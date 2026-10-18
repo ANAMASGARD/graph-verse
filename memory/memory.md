@@ -1,6 +1,6 @@
 # Graph Verse — session memory
 
-Last updated after phase 7 (pipeline).
+Last updated after phase 8 (framework adapters).
 
 ## Product
 
@@ -35,7 +35,8 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 | **5** Detail pane: summary, file, folder, hover | Built |
 | **6** Blast radius, dependency chain, insights, rail filter | Built; walks the edges already in the browser |
 | **7** Fetch, parse, store a public GitHub repo | Built; user runs the paste-and-watch checks |
-| **8+** | Not started |
+| **8** Next, Nest, and React adapters; route table; rail per framework | Built; user runs the browser checks |
+| **9+** | Not started |
 
 ## Parser
 
@@ -43,7 +44,7 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - Code in `parser/`. No Next, React, or FalkorDB. Uses the TypeScript compiler API already installed (the parser under ts-morph).
 - Contract is the JSON result: parsed files carry `folder`, `module`, lines, bytes, sha256, fan-in, fan-out; skipped files carry a reason; edges are `IMPORTS`, `RE_EXPORTS`, `DYNAMIC_IMPORT`. Unresolved imports stay in `coverage.failures` with a reason. Only resolved imports are edges.
 - Walks whole directories. Never enters `node_modules` or `.git`. Other exclusions come from the repo's `.gitignore`, reported per directory. `require()` is not collected.
-- Adapter list is the fallback only (`framework: none`, role `file`).
+- Adapter list, first match wins: Next.js, NestJS, React, then the fallback (`framework: none`, role `file`). The word `nextjs` stays in the Next adapter. Rail category names live in `lib/map/taxonomy.mts`.
 
 ## Map
 
@@ -52,7 +53,7 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - Detail pane: repository summary at rest; a file shows path, kind, lines, and neighbour lists; a folder shows role counts. Structure / Explanation tabs. Explanation stays empty. Hover links a path and its node.
 - Blast radius (incoming) and dependency chain (outgoing) are a two-hop walk (`lib/map/walk.mts`), same bound as FalkorDB `*1..2`. No request on click.
 - Insights (`lib/map/insights.mts`), collapsed at the bottom of the pane: nothing-imports (pages, routes, layouts, middleware, and config are excluded), unusual fan-in (mean + 2 standard deviations), import cycles (iterative), files over 1000 lines.
-- Rail click dims every file that is not that role and prints a match count on each panel. Counts add up to the rail total.
+- Rail order comes from the framework: Next.js is Page routes, API endpoints, Server actions, then the layers and plumbing. NestJS is Controllers, Services, Modules, Entities. A zero stays put. Anything the adapter didn't name is `file` at the end. Click still dims every other file.
 - Preview route and `data/preview-graph.json` are gone. The map reads the analysis stored for the org.
 
 ## Pipeline (phase 7)
@@ -64,7 +65,7 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - The FalkorDB user cannot `SUBSCRIBE`. Progress is an in-process bus on `globalThis`, not Redis pub/sub. The browser never opens FalkorDB.
 - Unfinished (`queued` or `running`) for 5 minutes shows as **stale** on the dashboard. That mark is display-only.
 - A partial graph keeps a one-line coverage banner (`Partial · N% of files parsed`). It can expand; the percent stays on the collapsed line.
-- Store: `lib/graph/analysis-store.ts`. Parsed files and skipped files are `:File` nodes; edges are `IMPORTS`, `RE_EXPORTS`, `DYNAMIC_IMPORT`.
+- Store: `lib/graph/analysis-store.ts`. Parsed files and skipped files are `:File` nodes; edges are `IMPORTS`, `RE_EXPORTS`, `DYNAMIC_IMPORT`. Routes are `:Route` nodes (`method`, `path`, `line`) linked with `HAS_ROUTE` and `DEFINED_IN`. The detail pane lists them.
 
 ## Dashboard UI (workspace)
 
@@ -91,3 +92,4 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - Phase 3 acceptance was run in the terminal (this repo, date-fns barrels, rename fixture, JSON round-trip).
 - Phases 4–6 were checked in the browser on `/preview` before that route was removed.
 - Phase 7: paste a public URL, paste it again, paste a missing repo, watch the stage from a second dashboard tab, and confirm the coverage banner names a percent under 95. Sign-in blocked the agent from running those clicks. Archive download and the graph write were checked from the terminal.
+- Phase 8: five checks in `specs/phase-08.md` — Next and Nest rails and route table, three route spot-checks, generic fallback, `nextjs` only in the adapter. Re-analyse (new URL or delete the old analysis) so stored runs pick up adapters and routes.

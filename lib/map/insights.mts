@@ -4,6 +4,7 @@
 
 import type { MapEdge } from "./fold.mts";
 import type { DetailFile } from "./detail.mts";
+import { reachedByFrameworkRole } from "./taxonomy.mts";
 
 export const INSIGHT_UNIMPORTED = "Nothing imports these files.";
 export const INSIGHT_UNUSUAL = "An unusual number of files import these.";
@@ -31,6 +32,7 @@ export interface InsightReport {
 }
 
 export function reachedByFramework(role: string): boolean {
+  if (reachedByFrameworkRole(role)) return true;
   const tokens = role.toLowerCase().split(/[^a-z]+/);
   return tokens.some((token) => FRAMEWORK_REACHED.has(token));
 }

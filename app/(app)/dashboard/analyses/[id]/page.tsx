@@ -45,7 +45,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
         repository={`${analysis.owner}/${analysis.name}`}
         framework={analysis.framework}
         importCount={analysis.importCount}
-        routeCount={analysis.routeCount}
+        routes={map.routes}
         files={map.files}
         edges={map.edges}
         coverage={coverage}

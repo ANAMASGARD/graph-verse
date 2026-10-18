@@ -11,6 +11,7 @@ import {
   unidentifiedCount,
   type DetailFile,
 } from "@/lib/map/detail.mts";
+import type { MapRoute } from "@/lib/map/taxonomy.mts";
 import { walkFiles, type WalkDirection } from "@/lib/map/walk.mts";
 import type { HoverTarget } from "./actions.mts";
 import { InsightsPanel } from "./insights-panel";
@@ -21,7 +22,7 @@ type DetailPaneProps = {
   repository: string;
   framework: string | null;
   importCount: number;
-  routeCount: number;
+  routes: readonly MapRoute[];
   files: readonly DetailFile[];
   edges: readonly MapEdge[];
   folded: FoldResult;
@@ -37,7 +38,7 @@ export function DetailPane({
   repository,
   framework,
   importCount,
-  routeCount,
+  routes,
   files,
   edges,
   folded,
@@ -69,7 +70,7 @@ export function DetailPane({
             repository={repository}
             framework={framework}
             importCount={importCount}
-            routeCount={routeCount}
+            routes={routes}
             files={files}
             edges={edges}
             folded={folded}
@@ -117,7 +118,7 @@ function RepositorySummary({
   repository,
   framework,
   importCount,
-  routeCount,
+  routes,
   files,
   edges,
   folded,
@@ -148,13 +149,21 @@ function RepositorySummary({
         </div>
         <div>
           <dt>Routes</dt>
-          <dd>{routeCount}</dd>
+          <dd>{routes.length}</dd>
         </div>
         <div>
           <dt>No convention</dt>
           <dd>{unidentified}</dd>
         </div>
       </dl>
+      <RouteTable
+        routes={routes}
+        hover={hover}
+        folded={folded}
+        onSelectFile={onSelectFile}
+        onHoverFile={onHoverFile}
+        onClearHover={onClearHover}
+      />
       <h3 className="detail-heading">
         Leaned on <span className="detail-count">{leaned.length}</span>
       </h3>
@@ -325,6 +334,65 @@ function FolderStructure({ id, folded, roleColor }: StructureProps & { id: strin
         ))}
       </ul>
     </div>
+  );
+}
+
+function RouteTable({
+  routes,
+  hover,
+  folded,
+  onSelectFile,
+  onHoverFile,
+  onClearHover,
+}: {
+  routes: readonly MapRoute[];
+  hover: HoverTarget | null;
+  folded: FoldResult;
+  onSelectFile: (path: string) => void;
+  onHoverFile: (path: string) => void;
+  onClearHover: () => void;
+}) {
+  return (
+    <table className="route-table">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Pattern</th>
+        </tr>
+      </thead>
+      <tbody>
+        {routes.length === 0 ? (
+          <tr>
+            <td className="route-empty" colSpan={2}>
+              None
+            </td>
+          </tr>
+        ) : (
+          routes.map((route) => (
+            <tr key={`${route.method}:${route.pattern}:${route.file}:${route.line}`}>
+              <td className="route-method">{route.method}</td>
+              <td>
+                <button
+                  type="button"
+                  className={`route-open${pathHovered(route.file, hover, folded) ? " route-open-hover" : ""}`}
+                  data-method={route.method}
+                  data-pattern={route.pattern}
+                  data-file={route.file}
+                  onClick={() => onSelectFile(route.file)}
+                  onMouseEnter={() => onHoverFile(route.file)}
+                  onMouseLeave={onClearHover}
+                >
+                  <span className="route-pattern">{route.pattern}</span>
+                  <span className="route-file">
+                    {route.file}:{route.line}
+                  </span>
+                </button>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
   );
 }
 

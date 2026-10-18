@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { DetailFile } from "@/lib/map/detail.mts";
 import { foldFiles, type MapEdge, type MapSelection } from "@/lib/map/fold.mts";
 import type { MapCoverage } from "@/lib/map/coverage.mts";
+import { railRoles, type MapRoute } from "@/lib/map/taxonomy.mts";
 import { ExplorerActions, type HoverTarget } from "./actions.mts";
 import { CoverageBanner } from "./coverage-banner";
 import { DetailPane } from "./detail-pane";
@@ -16,7 +17,7 @@ type ExplorerProps = {
   repository: string;
   framework: string | null;
   importCount: number;
-  routeCount: number;
+  routes: MapRoute[];
   files: DetailFile[];
   edges: MapEdge[];
   coverage: MapCoverage | null;
@@ -26,7 +27,7 @@ export function Explorer({
   repository,
   framework,
   importCount,
-  routeCount,
+  routes,
   files,
   edges,
   coverage,
@@ -36,7 +37,7 @@ export function Explorer({
   const [selection, setSelection] = useState<MapSelection>(null);
   const [hover, setHover] = useState<HoverTarget | null>(null);
   const [category, setCategory] = useState<string | null>(null);
-  const categories = useMemo(() => roleCounts(files), [files]);
+  const categories = useMemo(() => roleCounts(framework, files), [framework, files]);
   const roleColor = useMemo(() => new Map(categories.map((category) => [category.role, category.color])), [categories]);
 
   const actions = useMemo(
@@ -114,7 +115,7 @@ export function Explorer({
           repository={repository}
           framework={framework}
           importCount={importCount}
-          routeCount={routeCount}
+          routes={routes}
           files={files}
           edges={edges}
           folded={folded}
@@ -130,14 +131,15 @@ export function Explorer({
   );
 }
 
-function roleCounts(files: readonly DetailFile[]): { role: string; count: number; color: string }[] {
+function roleCounts(
+  framework: string | null,
+  files: readonly DetailFile[],
+): { role: string; count: number; color: string }[] {
   const counts = new Map<string, number>();
   for (const file of files) counts.set(file.role, (counts.get(file.role) ?? 0) + 1);
-  return [...counts.entries()]
-    .sort((left, right) => left[0].localeCompare(right[0]))
-    .map(([role, count], index) => ({
-      role,
-      count,
-      color: ROLE_COLOURS[index % ROLE_COLOURS.length] ?? ROLE_COLOURS[0],
-    }));
+  return railRoles(framework, counts).map((entry, index) => ({
+    role: entry.role,
+    count: entry.count,
+    color: ROLE_COLOURS[index % ROLE_COLOURS.length] ?? ROLE_COLOURS[0],
+  }));
 }

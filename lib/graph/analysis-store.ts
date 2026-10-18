@@ -15,6 +15,7 @@ import { parseQueryRows, type TabularGraphData } from "@/lib/graph/parse-query-r
 import type { DetailFile } from "@/lib/map/detail.mts";
 import type { MapEdge } from "@/lib/map/fold.mts";
 import type { MapCoverage } from "@/lib/map/coverage.mts";
+import type { MapRoute } from "@/lib/map/taxonomy.mts";
 import { publishProgress } from "@/lib/progress/channel";
 
 const SCHEMA_VERSION = 2;
@@ -239,7 +240,7 @@ export async function loadAnalysis(orgId: string, analysisId: string): Promise<S
 export async function loadMap(
   orgId: string,
   analysisId: string,
-): Promise<{ files: DetailFile[]; edges: MapEdge[] }> {
+): Promise<{ files: DetailFile[]; edges: MapEdge[]; routes: MapRoute[] }> {
   const graph = await getOrgGraph(orgId);
   const fileRows = await queryRows<Record<string, unknown>>(
     graph,
@@ -280,7 +281,29 @@ export async function loadMap(
     if (typeof row.fromPath !== "string" || typeof row.toPath !== "string") continue;
     edges.push({ from: row.fromPath, to: row.toPath });
   }
-  return { files, edges };
+  const routeRows = await queryRows<Record<string, unknown>>(
+    graph,
+    `
+    MATCH (a:Analysis {id: $id})-[:HAS_ROUTE]->(r:Route)-[:DEFINED_IN]->(f:File)
+    RETURN r.method AS method, r.path AS pattern, f.path AS file, r.line AS line
+    `,
+    { id: analysisId },
+  );
+  const routes: MapRoute[] = [];
+  for (const row of routeRows) {
+    const line = asNumber(row.line);
+    if (typeof row.method !== "string" || typeof row.pattern !== "string" || typeof row.file !== "string") continue;
+    if (line === null) continue;
+    routes.push({ method: row.method, pattern: row.pattern, file: row.file, line });
+  }
+  routes.sort(
+    (left, right) =>
+      left.pattern.localeCompare(right.pattern) ||
+      left.method.localeCompare(right.method) ||
+      left.file.localeCompare(right.file) ||
+      left.line - right.line,
+  );
+  return { files, edges, routes };
 }
 
 export async function storeParseResult(
@@ -362,6 +385,35 @@ export async function storeParseResult(
     for (const batch of chunks(edges, FILE_BATCH)) {
       await graph.query(edgeWrite(kind), { params: { edges: batch } });
     }
+  }
+
+  await graph.query(
+    `
+    MATCH (a:Analysis {id: $analysisId})-[:HAS_ROUTE]->(r:Route)
+    DETACH DELETE r
+    `,
+    { params: { analysisId } },
+  );
+  const routes = result.routes.map((route) => ({
+    id: `${analysisId}:${route.file}:${route.method}:${route.pattern}:${route.line}`,
+    fileId: fileId(analysisId, route.file),
+    method: route.method,
+    pattern: route.pattern,
+    line: route.line,
+  }));
+  for (const batch of chunks(routes, FILE_BATCH)) {
+    await graph.query(
+      `
+      MATCH (a:Analysis {id: $analysisId})
+      UNWIND $routes AS route
+      MATCH (f:File {id: route.fileId})
+      MERGE (r:Route {id: route.id})
+      SET r.method = route.method, r.path = route.pattern, r.line = route.line
+      MERGE (a)-[:HAS_ROUTE]->(r)
+      MERGE (r)-[:DEFINED_IN]->(f)
+      `,
+      { params: { analysisId, routes: batch } },
+    );
   }
 
   await graph.query(

@@ -150,6 +150,11 @@ export function assertParseResult(result: ParseResult): void {
       throw new Error(`edge endpoint is not a parsed file: ${edge.from} -> ${edge.to}`);
     }
   }
+  for (const route of result.routes) {
+    if (!paths.has(route.file)) throw new Error(`route file was not parsed: ${route.file}`);
+    if (route.method.trim() === "") throw new Error(`route has no method: ${route.file}`);
+    if (!route.pattern.startsWith("/")) throw new Error(`route pattern is not a full path: ${route.file}`);
+  }
   for (const directory of result.excludedDirectories) {
     if (directory.reason.trim() === "") {
       throw new Error(`excluded directory has no reason: ${directory.path}`);
