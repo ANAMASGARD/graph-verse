@@ -1,3 +1,7 @@
+[![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/hz-TFz4LJ4I)
+
+The image below is a YouTube video. Click it to watch the demo.
+
 [![Graph Verse demo](https://img.youtube.com/vi/hz-TFz4LJ4I/maxresdefault.jpg)](https://youtu.be/hz-TFz4LJ4I)
 
 # Graph Verse
