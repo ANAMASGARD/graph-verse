@@ -24,6 +24,7 @@ export function Explorer({ repository, framework, importCount, routeCount, files
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
   const [selection, setSelection] = useState<MapSelection>(null);
   const [hover, setHover] = useState<HoverTarget | null>(null);
+  const [category, setCategory] = useState<string | null>(null);
   const categories = useMemo(() => roleCounts(files), [files]);
   const roleColor = useMemo(() => new Map(categories.map((category) => [category.role, category.color])), [categories]);
 
@@ -68,11 +69,18 @@ export function Explorer({ repository, framework, importCount, routeCount, files
           <p className="explorer-repo">{repository}</p>
           <p className="explorer-rail-label">Categories</p>
           <ul>
-            {categories.map((category) => (
-              <li key={category.role}>
-                <span className="explorer-swatch" style={{ background: category.color }} />
-                <span className="explorer-role">{category.role}</span>
-                <span className="explorer-count">{category.count}</span>
+            {categories.map((entry) => (
+              <li key={entry.role}>
+                <button
+                  type="button"
+                  className={`explorer-category${category === entry.role ? " explorer-category-active" : ""}`}
+                  aria-pressed={category === entry.role}
+                  onClick={() => setCategory((current) => (current === entry.role ? null : entry.role))}
+                >
+                  <span className="explorer-swatch" style={{ background: entry.color }} />
+                  <span className="explorer-role">{entry.role}</span>
+                  <span className="explorer-count">{entry.count}</span>
+                </button>
               </li>
             ))}
           </ul>
@@ -84,6 +92,7 @@ export function Explorer({ repository, framework, importCount, routeCount, files
             selection={selection}
             roleColor={categories[0]?.color ?? ROLE_COLOURS[0]}
             hover={hover}
+            category={category}
             onClear={() => setSelection(null)}
           />
         </div>

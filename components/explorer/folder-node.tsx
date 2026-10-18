@@ -20,6 +20,7 @@ export type FolderNodeData = {
   fileCount: number;
   fanIn: number;
   fanOut: number;
+  matched: number | null;
   open: boolean;
   rows: FolderRow[];
   hidden: number;
@@ -41,6 +42,7 @@ export function FolderNode({ id, data }: FolderNodeProps) {
       style={{ borderLeftColor: data.roleColor }}
       data-folder={id}
       data-open={data.open ? "true" : "false"}
+      data-match={data.matched === null ? undefined : data.matched}
       data-hovered={data.hovered ? "true" : "false"}
       onMouseOver={(event) => {
         const row = event.target instanceof Element ? event.target.closest("[data-file]") : null;
@@ -85,7 +87,10 @@ export function FolderNode({ id, data }: FolderNodeProps) {
           else actions.openFolder(id);
         }}
       >
-        <span className="map-node-label">{data.label}</span>
+        <span className="map-node-title">
+          <span className="map-node-label">{data.label}</span>
+          {data.matched !== null ? <span className="map-node-match">{data.matched}</span> : null}
+        </span>
         {data.open ? (
           <span className="map-node-meta">
             {data.fileCount} files · in {data.fanIn} · out {data.fanOut}

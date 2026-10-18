@@ -11,7 +11,9 @@ import {
   unidentifiedCount,
   type DetailFile,
 } from "@/lib/map/detail.mts";
+import { walkFiles, type WalkDirection } from "@/lib/map/walk.mts";
 import type { HoverTarget } from "./actions.mts";
+import { InsightsPanel } from "./insights-panel";
 
 type DetailTab = "structure" | "explanation";
 
@@ -81,6 +83,15 @@ export function DetailPane({
           />
         )}
       </div>
+      <InsightsPanel
+        files={files}
+        edges={edges}
+        folded={folded}
+        hover={hover}
+        onSelectFile={onSelectFile}
+        onHoverFile={onHoverFile}
+        onClearHover={onClearHover}
+      />
     </aside>
   );
 }
@@ -194,6 +205,12 @@ function FileStructure({
 }: StructureProps & { path: string }) {
   const file = byPath.get(path);
   const lists = useMemo(() => neighbourLists(path, edges), [path, edges]);
+  const [walkKind, setWalkKind] = useState<WalkKind | null>(null);
+  const direction = walkDirection(walkKind);
+  const hits = useMemo(
+    () => (direction === null ? [] : walkFiles(path, edges, direction)),
+    [direction, path, edges],
+  );
 
   return (
     <div data-detail="file" data-path={path}>
@@ -222,6 +239,38 @@ function FileStructure({
           <dd>{file ? file.lines : null}</dd>
         </div>
       </dl>
+      <div className="detail-walks">
+        <button
+          type="button"
+          aria-pressed={walkKind === "blast"}
+          onClick={() => setWalkKind((current) => (current === "blast" ? null : "blast"))}
+        >
+          Blast radius
+        </button>
+        <button
+          type="button"
+          aria-pressed={walkKind === "chain"}
+          onClick={() => setWalkKind((current) => (current === "chain" ? null : "chain"))}
+        >
+          Dependency chain
+        </button>
+      </div>
+      {walkKind !== null ? (
+        <ul className="detail-paths" data-walk={walkKind}>
+          {hits.map((hit) => (
+            <li key={hit.path}>
+              <PathButton
+                path={hit.path}
+                count={hit.depth}
+                hovered={pathHovered(hit.path, hover, folded)}
+                onSelectFile={onSelectFile}
+                onHoverFile={onHoverFile}
+                onClearHover={onClearHover}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <h3 className="detail-heading">
         Depends on <span className="detail-count" data-depends={lists.dependsOn.length}>{lists.dependsOn.length}</span>
       </h3>
@@ -310,6 +359,23 @@ function PathButton({
       {count !== undefined ? <span className="detail-count">{count}</span> : null}
     </button>
   );
+}
+
+type WalkKind = "blast" | "chain";
+
+function walkDirection(kind: WalkKind | null): WalkDirection | null {
+  switch (kind) {
+    case null:
+      return null;
+    case "blast":
+      return "in";
+    case "chain":
+      return "out";
+    default: {
+      const unreachable: never = kind;
+      return unreachable;
+    }
+  }
 }
 
 function pathHovered(path: string, hover: HoverTarget | null, folded: FoldResult): boolean {

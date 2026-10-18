@@ -34,10 +34,12 @@ export function nodeSize(
   folderLabel: string,
   rowLabels: readonly string[],
   maxFanIn: number,
+  matched: number | null = null,
 ): { width: number; height: number } {
+  const label = matched === null ? folderLabel : `${folderLabel} ${matched}`;
   const texts = open
-    ? [folderLabel, `${node.files.length} files · in ${node.fanIn} · out ${node.fanOut}`, ...rowLabels]
-    : [folderLabel];
+    ? [label, `${node.files.length} files · in ${node.fanIn} · out ${node.fanOut}`, ...rowLabels]
+    : [label];
   const width = Math.max(96, ...texts.map(textWidth));
   if (!open) {
     const scale = maxFanIn === 0 ? 0 : node.fanIn / maxFanIn;
@@ -62,6 +64,7 @@ export function layoutFolders(
   folded: FoldResult,
   open: ReadonlySet<string>,
   labels: ReadonlyMap<string, string>,
+  matched: ReadonlyMap<string, number> | null = null,
 ): PlacedNode[] {
   const graph = new dagre.graphlib.Graph();
   graph.setDefaultEdgeLabel(() => ({}));
@@ -74,7 +77,14 @@ export function layoutFolders(
     const rowLabels = open.has(node.id)
       ? visibleFiles(node).shown.map((file) => labels.get(file.path) ?? file.path)
       : [];
-    const size = nodeSize(node, open.has(node.id), labels.get(node.id) ?? node.id, rowLabels, maxFanIn);
+    const size = nodeSize(
+      node,
+      open.has(node.id),
+      labels.get(node.id) ?? node.id,
+      rowLabels,
+      maxFanIn,
+      matched?.get(node.id) ?? null,
+    );
     sizes.set(node.id, size);
     graph.setNode(node.id, size);
   }

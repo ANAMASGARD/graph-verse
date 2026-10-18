@@ -58,12 +58,28 @@
 }
 
 .explorer-rail li {
+  margin: 0;
+  padding: 0;
+}
+
+.explorer-category {
   display: grid;
   grid-template-columns: 8px 1fr auto;
   gap: 0.4rem;
   align-items: center;
+  width: 100%;
+  margin: 0;
   padding: 0.2rem 0;
-  cursor: default;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.explorer-category-active {
+  box-shadow: inset 2px 0 0 var(--map-select);
 }
 
 .explorer-swatch {
@@ -144,6 +160,21 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.map-node-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.map-node-match {
+  flex: none;
+  color: var(--muted-foreground);
+  font-family: var(--font-workspace-mono), ui-monospace, monospace;
+  font-size: 10px;
 }
 
 .map-node-label,
@@ -320,4 +351,73 @@
   gap: 0.4rem;
   align-items: center;
   padding: 0.15rem 0;
+}
+
+.detail-walks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+
+.detail-walks button {
+  margin: 0;
+  padding: 0.28rem 0.3rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.detail-walks button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px var(--map-select);
+}
+
+.detail-path-inline {
+  display: inline;
+  width: auto;
+  padding: 0;
+}
+
+.insights {
+  flex: none;
+  border-top: 1px solid var(--border);
+}
+
+.insights-toggle {
+  width: 100%;
+  margin: 0;
+  padding: 0.45rem 0.65rem;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.insights-toggle[aria-expanded="true"] {
+  color: var(--foreground);
+}
+
+.insights-body {
+  max-height: 38vh;
+  overflow: auto;
+  padding: 0 0.65rem 0.75rem;
+}
+
+.insight-cycle {
+  margin: 0.2rem 0;
+  line-height: 1.45;
+}
+
+.insight-arrow {
+  color: var(--muted-foreground);
+  font-family: var(--font-workspace-mono), ui-monospace, monospace;
+  font-size: 11px;
 }

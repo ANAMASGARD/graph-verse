@@ -36,17 +36,19 @@ type MapCanvasProps = {
   open: ReadonlySet<string>;
   selection: MapSelection;
   hover: HoverTarget | null;
+  category: string | null;
   roleColor: string;
   onClear: () => void;
 };
 
-function MapSurface({ folded, open, selection, hover, roleColor, onClear }: MapCanvasProps) {
+function MapSurface({ folded, open, selection, hover, category, roleColor, onClear }: MapCanvasProps) {
   const { fitView, getZoom } = useReactFlow();
   const previousOpen = useRef<ReadonlySet<string>>(new Set());
   const openKey = [...open].sort().join("\n");
 
   const labels = useMemo(() => labelsOnScreen(folded, open), [folded, open]);
-  const placed = useMemo(() => layoutFolders(folded, open, labels), [folded, open, labels]);
+  const matched = useMemo(() => matchCounts(folded, category), [category, folded]);
+  const placed = useMemo(() => layoutFolders(folded, open, labels, matched), [folded, labels, matched, open]);
   const drawn = useMemo(() => visualEdges(folded, open), [folded, open]);
   const shown = useMemo(() => shownFiles(folded, open), [folded, open]);
 
@@ -55,6 +57,8 @@ function MapSurface({ folded, open, selection, hover, roleColor, onClear }: MapC
       const visible = visibleFiles(place.node).shown;
       const nodeHover = folderHovered(hover, place.id, place.node, open.has(place.id), visible);
       const rowHover = (path: string) => hover?.kind === "file" && hover.path === path;
+      const nodeMatched = matched?.get(place.id) ?? null;
+      const categoryDim = nodeMatched === 0;
       return {
         id: place.id,
         type: "folder",
@@ -73,21 +77,27 @@ function MapSurface({ folded, open, selection, hover, roleColor, onClear }: MapC
           fanOut: place.node.fanOut,
           open: open.has(place.id),
           hidden: place.node.files.length - visible.length,
+          matched: nodeMatched,
           selected: selection?.kind === "node" && selection.id === place.id,
           hovered: nodeHover,
-          dimmed: nodeDimmed(selection, place.id, folded) && !nodeHover && !visible.some((file) => rowHover(file.path)),
+          dimmed:
+            (categoryDim || nodeDimmed(selection, place.id, folded)) &&
+            !nodeHover &&
+            !visible.some((file) => rowHover(file.path)),
           roleColor,
           rows: visible.map((file) => ({
             path: file.path,
             label: labels.get(file.path) ?? file.path,
             selected: selection?.kind === "file" && selection.path === file.path,
             hovered: rowHover(file.path),
-            dimmed: rowDimmed(selection, file.path, folded) && !rowHover(file.path),
+            dimmed:
+              (rowDimmed(selection, file.path, folded) || (nodeMatched !== null && nodeMatched > 0 && file.role !== category)) &&
+              !rowHover(file.path),
           })),
         },
       };
     });
-  }, [folded, hover, labels, open, placed, roleColor, selection]);
+  }, [category, folded, hover, labels, matched, open, placed, roleColor, selection]);
 
   const edges = useMemo<Edge[]>(() => {
     return drawn.map((edge) => {
@@ -148,6 +158,15 @@ export function MapCanvas(props: MapCanvasProps) {
       <MapSurface {...props} />
     </ReactFlowProvider>
   );
+}
+
+function matchCounts(folded: FoldResult, category: string | null): ReadonlyMap<string, number> | null {
+  if (category === null) return null;
+  const counts = new Map<string, number>();
+  for (const node of folded.nodes) {
+    counts.set(node.id, node.files.filter((file) => file.role === category).length);
+  }
+  return counts;
 }
 
 function folderHovered(
