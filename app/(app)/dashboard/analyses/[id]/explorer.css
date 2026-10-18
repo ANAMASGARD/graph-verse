@@ -4,7 +4,7 @@
   --map-select: #2f6fbb;
   display: grid;
   grid-template-columns: 11.5rem minmax(0, 1fr) 14rem;
-  height: 100dvh;
+  height: 100%;
   background: var(--background);
   color: var(--foreground);
   font-size: 12px;
@@ -100,8 +100,27 @@
 }
 
 .explorer-map {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
+}
+
+.explorer-canvas {
+  min-height: 0;
+  flex: 1;
+}
+
+.analysis-map {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
+.analysis-map .explorer {
+  min-height: 0;
+  flex: 1;
+  height: auto;
 }
 
 .explorer-map .react-flow {
@@ -417,6 +436,34 @@
 }
 
 .insight-arrow {
+  color: var(--muted-foreground);
+  font-family: var(--font-workspace-mono), ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.coverage-banner {
+  flex: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.coverage-banner button {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-workspace-mono), ui-monospace, monospace;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.coverage-detail {
+  margin: 0;
+  padding: 0 0.6rem 0.4rem;
   color: var(--muted-foreground);
   font-family: var(--font-workspace-mono), ui-monospace, monospace;
   font-size: 11px;

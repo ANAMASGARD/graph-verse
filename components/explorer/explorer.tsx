@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 
 import type { DetailFile } from "@/lib/map/detail.mts";
 import { foldFiles, type MapEdge, type MapSelection } from "@/lib/map/fold.mts";
+import type { MapCoverage } from "@/lib/map/coverage.mts";
 import { ExplorerActions, type HoverTarget } from "./actions.mts";
+import { CoverageBanner } from "./coverage-banner";
 import { DetailPane } from "./detail-pane";
 import { MapCanvas } from "./map-canvas";
 
@@ -17,9 +19,18 @@ type ExplorerProps = {
   routeCount: number;
   files: DetailFile[];
   edges: MapEdge[];
+  coverage: MapCoverage | null;
 };
 
-export function Explorer({ repository, framework, importCount, routeCount, files, edges }: ExplorerProps) {
+export function Explorer({
+  repository,
+  framework,
+  importCount,
+  routeCount,
+  files,
+  edges,
+  coverage,
+}: ExplorerProps) {
   const folded = useMemo(() => foldFiles(files, edges), [files, edges]);
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
   const [selection, setSelection] = useState<MapSelection>(null);
@@ -86,6 +97,8 @@ export function Explorer({ repository, framework, importCount, routeCount, files
           </ul>
         </aside>
         <div className="explorer-map">
+          {coverage ? <CoverageBanner coverage={coverage} /> : null}
+          <div className="explorer-canvas">
           <MapCanvas
             folded={folded}
             open={open}
@@ -95,6 +108,7 @@ export function Explorer({ repository, framework, importCount, routeCount, files
             category={category}
             onClear={() => setSelection(null)}
           />
+          </div>
         </div>
         <DetailPane
           repository={repository}

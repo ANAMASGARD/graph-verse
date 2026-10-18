@@ -12,7 +12,7 @@ type AppShellProps = {
 
 export function AppShell({ children, theme }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="border-b-2 border-border bg-card">
         <div className="workspace-container flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
@@ -36,7 +36,7 @@ export function AppShell({ children, theme }: AppShellProps) {
           </div>
         </div>
       </header>
-      <main className="workspace-container py-8">{children}</main>
+      <main className="flex min-h-0 flex-1 flex-col">{children}</main>
     </div>
   );
 }

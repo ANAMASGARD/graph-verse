@@ -1,6 +1,18 @@
-import { statusUi } from "@/lib/analysis-status-ui";
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { statusUi, type StatusUi } from "@/lib/analysis-status-ui";
 import { formatRelativeTime } from "@/lib/format-relative-time";
-import type { AnalysisListItem, AnalysisStatus } from "@/lib/graph/analysis-types";
+import {
+  parseProgressEvent,
+  type AnalysisListItem,
+  type AnalysisStatus,
+  type ProgressEvent,
+} from "@/lib/graph/analysis-types";
+import { isUnfinished, isUnfinishedStale } from "@/lib/graph/stale";
+import { RepositoryForm } from "@/components/repository-form";
 
 type AnalysisDashboardProps = {
   orgName: string;
@@ -14,36 +26,85 @@ function countByStatus(
   return analyses.filter((a) => a.status === status).length;
 }
 
+function applyLive(row: AnalysisListItem, event: ProgressEvent | undefined): AnalysisListItem {
+  if (!event) return row;
+  return {
+    ...row,
+    status: event.status,
+    stage: event.stage,
+    stageMessage: event.message,
+  };
+}
+
+function staleUi(): StatusUi {
+  return {
+    symbol: "○",
+    label: "stale",
+    rowClass: "text-muted-foreground",
+    chipClass: "text-muted-foreground",
+  };
+}
+
 function startedAt(row: AnalysisListItem): string | null {
   return row.startedAt ?? row.createdAt;
 }
 
 export function AnalysisDashboard({ orgName, analyses }: AnalysisDashboardProps) {
-  const total = analyses.length;
-  const queued = countByStatus(analyses, "queued");
-  const running = countByStatus(analyses, "running");
-  const complete = countByStatus(analyses, "complete");
-  const failed = countByStatus(analyses, "failed");
+  const [live, setLive] = useState<Record<string, ProgressEvent>>({});
+  const rows = analyses.map((row) => applyLive(row, live[row.id]));
+  const watchKey = analyses
+    .filter((row) => isUnfinished(row.status))
+    .map((row) => row.id)
+    .join("\n");
+
+  useEffect(() => {
+    const ids = watchKey.length === 0 ? [] : watchKey.split("\n");
+    if (ids.length === 0) return;
+    const sources = ids.map((id) => {
+      const source = new EventSource(`/dashboard/analyses/${id}/events`);
+      source.onmessage = (message) => {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(message.data);
+        } catch {
+          return;
+        }
+        const event = parseProgressEvent(parsed);
+        if (!event) return;
+        setLive((current) => ({ ...current, [id]: event }));
+      };
+      return source;
+    });
+    return () => {
+      for (const source of sources) source.close();
+    };
+  }, [watchKey]);
+
+  const total = rows.length;
+  const stale = rows.filter((row) => isUnfinishedStale(row)).length;
+  const queued = rows.filter((row) => row.status === "queued" && !isUnfinishedStale(row)).length;
+  const running = rows.filter((row) => row.status === "running" && !isUnfinishedStale(row)).length;
+  const complete = countByStatus(rows, "complete");
+  const failed = countByStatus(rows, "failed");
 
   if (total === 0) {
     return (
-      <div className="brutal-surface w-full px-5 py-8 sm:px-8">
-        <p className="workspace-display text-2xl font-bold tracking-tight">
-          {orgName}
-        </p>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          0 analyses
-        </p>
-        <p className="mt-6 max-w-lg text-base font-medium leading-relaxed text-muted-foreground">
-          No repository runs for this team yet. When the parser pipeline lands,
-          completed runs will show up here.
-        </p>
+      <div className="flex w-full flex-col gap-5">
+        <RepositoryForm />
+        <div className="brutal-surface w-full px-5 py-8 sm:px-8">
+          <p className="workspace-display text-2xl font-bold tracking-tight">{orgName}</p>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">0 analyses</p>
+          <p className="mt-6 max-w-lg text-base font-medium leading-relaxed text-muted-foreground">
+            Paste a public GitHub repository to start a run.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5">
+      <RepositoryForm />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="workspace-display text-2xl font-bold tracking-tight sm:text-3xl">
@@ -60,6 +121,11 @@ export function AnalysisDashboard({ orgName, analyses }: AnalysisDashboardProps)
           <li>
             <span>○</span> {queued} queued
           </li>
+          {stale > 0 ? (
+            <li>
+              <span>○</span> {stale} stale
+            </li>
+          ) : null}
           <li>
             <span className="text-foreground">●</span> {complete} complete
           </li>
@@ -89,11 +155,11 @@ export function AnalysisDashboard({ orgName, analyses }: AnalysisDashboardProps)
               </tr>
             </thead>
             <tbody>
-              {analyses.map((row) => {
-                const ui = statusUi(row.status);
+              {rows.map((row) => {
+                const staleRun = isUnfinishedStale(row);
+                const ui = staleRun ? staleUi() : statusUi(row.status);
                 const showSubline =
-                  (row.status === "failed" || row.status === "running") &&
-                  row.stageMessage;
+                  (row.status === "failed" || isUnfinished(row.status)) && row.stageMessage;
 
                 return (
                   <tr
@@ -101,9 +167,12 @@ export function AnalysisDashboard({ orgName, analyses }: AnalysisDashboardProps)
                     className="border-b border-border/50 last:border-b-0"
                   >
                     <td className="px-6 py-4 align-top">
-                      <span className="workspace-mono text-base font-semibold text-foreground">
+                      <Link
+                        href={`/dashboard/analyses/${row.id}`}
+                        className="workspace-mono text-base font-semibold text-foreground"
+                      >
                         {row.repoOwner}/{row.repoName}
-                      </span>
+                      </Link>
                       {showSubline ? (
                         <p
                           className={`workspace-mono mt-1.5 text-sm font-medium leading-snug ${
@@ -112,6 +181,7 @@ export function AnalysisDashboard({ orgName, analyses }: AnalysisDashboardProps)
                               : "text-muted-foreground"
                           }`}
                         >
+                          {row.stage ? `${row.stage} · ` : ""}
                           {row.stageMessage}
                         </p>
                       ) : null}

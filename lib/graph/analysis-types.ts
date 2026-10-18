@@ -37,3 +37,23 @@ export function isAnalysisStage(value: unknown): value is AnalysisStage {
     (ANALYSIS_STAGES as readonly string[]).includes(value)
   );
 }
+
+/** The only payload a progress stream publishes. */
+export type ProgressEvent = {
+  status: AnalysisStatus;
+  stage: AnalysisStage | null;
+  message: string;
+};
+
+export function parseProgressEvent(value: unknown): ProgressEvent | null {
+  if (value === null || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  if (!isAnalysisStatus(record.status)) return null;
+  if (record.stage !== null && !isAnalysisStage(record.stage)) return null;
+  if (typeof record.message !== "string") return null;
+  return {
+    status: record.status,
+    stage: record.stage,
+    message: record.message,
+  };
+}

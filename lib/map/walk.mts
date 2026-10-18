@@ -1,8 +1,7 @@
 // Depth-limited neighbourhood of one file. Two hops is the whole answer:
 // FalkorDB writes the same bound as *1..2, which starts at the first
-// neighbour and stops at the second. The preview has no stored graph, so
-// this walks the edge list already in the browser. The start file is not
-// a result.
+// neighbour and stops at the second. The page already holds the edges, so
+// the walk stays in the browser. The start file is not a result.
 
 import type { MapEdge } from "./fold.mts";
 
