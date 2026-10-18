@@ -1,12 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // FalkorDB uses the Redis client; keep it on the Node side, not in the Turbopack graph.
+  serverExternalPackages: ["falkordb", "redis", "@redis/client"],
   experimental: {
     agentFeedback: true,
   },
-  cacheComponents: true,
-  partialPrefetching: true,
   turbopack: {
     rules: {
       "*.css": {

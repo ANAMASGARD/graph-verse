@@ -1,0 +1,49 @@
+/* Landing auth modals — frosted glass over the cinematic hero */
+.cl-modalBackdrop {
+  background-color: rgba(5, 5, 5, 0.42) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+}
+
+/*
+ * OAuth on dark neo-brutalist cards: light button surfaces; mask-based icons
+ * (GitHub, Apple, …) need a dark fill — Clerk uses foreground (white in dark).
+ */
+.cl-socialButtonsIconButton,
+.cl-socialButtonsBlockButton {
+  background-color: #fff !important;
+  color: #050505 !important;
+  border: 2px solid #000 !important;
+  box-shadow: 3px 3px 0 #000 !important;
+}
+
+.cl-socialButtonsIconButton:hover,
+.cl-socialButtonsBlockButton:hover {
+  background-color: #ffdc58 !important;
+}
+
+.cl-socialButtonsProviderIcon,
+.cl-socialButtonsIconButton svg,
+.cl-socialButtonsIconButton img,
+.cl-socialButtonsBlockButton svg,
+.cl-socialButtonsBlockButton img {
+  opacity: 1 !important;
+  filter: none !important;
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+}
+
+/* Mask-image provider icons (see @clerk/ui ProviderIcon SUPPORTS_MASK_IMAGE) */
+.cl-socialButtonsProviderIcon__github,
+.cl-providerIcon__github,
+.cl-socialButtonsProviderIcon__apple,
+.cl-providerIcon__apple,
+.cl-socialButtonsProviderIcon__okta,
+.cl-providerIcon__okta,
+.cl-socialButtonsProviderIcon__vercel,
+.cl-providerIcon__vercel,
+.cl-socialButtonsProviderIcon__x,
+.cl-providerIcon__x {
+  background-color: #050505 !important;
+  background-image: none !important;
+}
