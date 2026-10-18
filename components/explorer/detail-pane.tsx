@@ -21,6 +21,7 @@ import {
   type ExplanationState,
   type Freshness,
 } from "./explanation-panel";
+import { AskPanel } from "./ask-panel";
 import { InsightsPanel } from "./insights-panel";
 
 type DetailTab = "structure" | "explanation";
@@ -49,6 +50,7 @@ type DetailPaneProps = {
 
 export function DetailPane(props: DetailPaneProps) {
   const [tab, setTab] = useState<DetailTab>("structure");
+  const [asking, setAsking] = useState(false);
   const byPath = useMemo(() => new Map(props.files.map((file) => [file.path, file])), [props.files]);
 
   const explainTarget = explainTargetOf(props.selection);
@@ -76,14 +78,28 @@ export function DetailPane(props: DetailPaneProps) {
 
   return (
     <aside className="explorer-detail" aria-label="Detail">
-      <div className="detail-tabs" role="tablist">
-        <button type="button" role="tab" aria-selected={tab === "structure"} onClick={() => setTab("structure")}>
-          Structure
-        </button>
-        <button type="button" role="tab" aria-selected={tab === "explanation"} onClick={() => setTab("explanation")}>
-          Explanation
+      <div className="detail-bar">
+        {asking ? (
+          <button type="button" className="detail-back" onClick={() => setAsking(false)}>
+            Back
+          </button>
+        ) : (
+          <div className="detail-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected={tab === "structure"} onClick={() => setTab("structure")}>
+              Structure
+            </button>
+            <button type="button" role="tab" aria-selected={tab === "explanation"} onClick={() => setTab("explanation")}>
+              Explanation
+            </button>
+          </div>
+        )}
+        <button type="button" className="detail-ask" aria-pressed={asking} onClick={() => setAsking((current) => !current)}>
+          Ask
         </button>
       </div>
+      {asking ? (
+        <AskPanel analysisId={props.analysisId} selected={selectedLabel(props.selection)} />
+      ) : (
       <div className="detail-body" role="tabpanel">
         {tab === "explanation" ? (
           explainTarget === null ? (
@@ -95,6 +111,8 @@ export function DetailPane(props: DetailPaneProps) {
           <Structure {...props} byPath={byPath} />
         )}
       </div>
+      )}
+      {asking ? null : (
       <InsightsPanel
         files={props.files}
         edges={props.edges}
@@ -104,8 +122,23 @@ export function DetailPane(props: DetailPaneProps) {
         onHoverFile={props.onHoverFile}
         onClearHover={props.onClearHover}
       />
+      )}
     </aside>
   );
+}
+
+function selectedLabel(selection: MapSelection): string | null {
+  if (selection === null) return null;
+  switch (selection.kind) {
+    case "file":
+      return selection.path;
+    case "node":
+      return selection.id;
+    default: {
+      const unreachable: never = selection;
+      return unreachable;
+    }
+  }
 }
 
 type StructureProps = DetailPaneProps & { byPath: ReadonlyMap<string, DetailFile> };

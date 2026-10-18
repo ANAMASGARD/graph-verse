@@ -13,7 +13,9 @@
     "db:seed": "node --env-file=.env.local scripts/seed-dev-graphs.mjs --from-env",
     "eval:paths": "node --import ./evals/register.mjs evals/paths.mts",
     "eval:roles": "node --import ./evals/register.mjs evals/roles.mts",
-    "eval:prompts": "node --import ./evals/register.mjs evals/prompts.mts"
+    "eval:prompts": "node --import ./evals/register.mjs evals/prompts.mts",
+    "eval:agent": "node --import ./evals/register.mjs evals/agent.mts",
+    "agent": "npm --prefix agent run dev"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.17",

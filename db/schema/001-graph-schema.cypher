@@ -9,6 +9,7 @@
 //   :Route       id, method, path, line
 //   :Insight     id, body, createdAt
 //   :AiCache      key, task, model, body, createdAt
+//   :Inquiry     id, question, paths, threadId, createdAt
 //
 // Relationships
 //   (Project)-[:HAS_ANALYSIS]->(Analysis)     one analysis per project
@@ -17,6 +18,7 @@
 //     properties: specifier, line, typeOnly
 //   (Analysis)-[:HAS_ROUTE]->(Route)-[:DEFINED_IN]->(File)
 //   (Analysis)-[:HAS_INSIGHT]->(Insight)
+//   (Analysis)-[:HAS_INQUIRY]->(Inquiry)
 //
 // Unresolved imports live in Analysis.coverage only — never as edges.
 
@@ -25,3 +27,4 @@ CREATE INDEX FOR (f:File) ON (f.path);
 CREATE INDEX FOR (p:Project) ON (p.repoOwner);
 CREATE INDEX FOR (p:Project) ON (p.repoName);
 CREATE INDEX FOR (c:AiCache) ON (c.key);
+CREATE INDEX FOR (q:Inquiry) ON (q.id);

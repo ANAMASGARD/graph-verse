@@ -1,6 +1,6 @@
 # Graph Verse — session memory
 
-Last updated after phase 11 (evals: invented-path, role accuracy, prompt versions).
+Last updated after phase 12 (Managed Deep Agent, Ask pane, env gitignore).
 
 ## Product
 
@@ -38,8 +38,9 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 | **8** Next, Nest, and React adapters; route table; rail per framework | Built; user runs the browser checks |
 | **9** `require()`, CommonJS export names, Express adapter | Built; user runs the browser checks |
 | **10** Explain, cache, trace, classify | Built and pushed; user runs acceptance in browser |
-| **11** Evals: invented-path, role accuracy, prompt versions | Built; user runs the three scripts |
-| **12+** | Not started |
+| **11** Evals: invented-path, role accuracy, prompt versions | Built and pushed; user runs the three scripts |
+| **12** Managed Deep Agent, tool API, Ask pane, agent evals | Built; user runs acceptance in browser + `npm run eval:agent` |
+| **13+** | Not started |
 
 ## Parser
 
@@ -53,7 +54,8 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 
 - Explorer: `components/explorer/`. Three columns stay put: rail, map, detail pane.
 - Folding (`lib/map/fold.mts`): deepest-first, threshold starts at 2, rises until under 24 nodes. Hono `src` folded to 22 nodes at threshold 5 before the preview file was deleted.
-- Detail pane: repository summary at rest; a file shows path, kind, lines, and neighbour lists; a folder shows role counts. Structure / Explanation tabs. Explanation tab: Explain (file or folded folder), subset markdown renderer with path links, LangSmith-traced calls, FalkorDB `:AiCache`, staleness vs GitHub HEAD, Re-analyse. Fallback files get model roles (`service`, `repository`, `model`, `util`, `config`, `component`, `hook` only). Hover links a path and its node.
+- Detail pane: repository summary at rest; a file shows path, kind, lines, and neighbour lists; a folder shows role counts. Bar: Structure / Explanation tabs plus **Ask** (not a third tab). Ask replaces the whole pane; back returns to the prior selection. Explanation tab: Explain (file or folded folder), subset markdown renderer with path links, LangSmith-traced calls, FalkorDB `:AiCache`, staleness vs GitHub HEAD, Re-analyse. Fallback files get model roles (`service`, `repository`, `model`, `util`, `config`, `component`, `hook` only). Hover links a path and its node.
+- Ask (`components/explorer/ask-panel.tsx`): multi-turn chat scoped to the analysis; SSE shows each tool step then streamed text and path chips. Stream relay: `app/(app)/dashboard/analyses/[id]/ask/route.ts`. Agent down does not break map, pane, blast radius, or Explain.
 - Blast radius (incoming) and dependency chain (outgoing) are a two-hop walk (`lib/map/walk.mts`), same bound as FalkorDB `*1..2`. No request on click.
 - Insights (`lib/map/insights.mts`), collapsed at the bottom of the pane: nothing-imports (pages, routes, layouts, middleware, and config are excluded), unusual fan-in (mean + 2 standard deviations), import cycles (iterative), files over 1000 lines.
 - Rail order comes from the framework: Next.js is Page routes, API endpoints, Server actions, then the layers and plumbing. NestJS is Controllers, Services, Modules, Entities. Express is Routers, Controllers, Services, Models, Middleware. A zero stays put. Anything the adapter didn't name is `file` at the end. Click still dims every other file.
@@ -99,6 +101,16 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - **Prompt versions:** current system prompt stays in `lib/ai/prompts.ts`. Retired prompt is only `evals/retired-prompt.mts` (not imported by the app). `npm run eval:prompts -- <directory>` builds LangSmith dataset `graph-verse-explain` (up to 8 files with a neighbour, source ≤ 24_000 chars; `--refresh` replaces it) and runs two experiments, `explain-current` and `explain-retired`. Each is scored with invented-path (exact) and `useful` from `MODELS.classify`. The script says usefulness is a model's opinion, prints both scores, the delta, and the experiment URLs.
 - **Blocker seen:** `npm run eval:paths` splice passed, then LangSmith **403** on listing runs. Org key needs `LANGSMITH_WORKSPACE_ID` in `.env.local` (SDK reads that name) before trace listing or the prompt experiments can run.
 
+## Agent (phase 12)
+
+- Separate service under `agent/` (`managed-deepagents`, `defineDeepAgent` in `agent/agent.ts`). Local dev: `npm run agent` (port **2024**). Instructions: `agent/instructions.md` — tool-first lookup, no code review/grading, never invent paths. Model: `openai:gpt-5.4-mini-2026-03-17`. Identity: `agent/identity.ts` with backend auth (`X-MDA-Ingress-Secret`, `X-MDA-User-Id`).
+- Six LangChain tools in `agent/tools/graph.ts` call the app over HTTP with a bearer credential from run context (`contextSchema.credential`). Fixed server Cypher in `lib/agent/queries.ts`: summary, search_files, list_role, neighbours, walk (depth ≤ 2), routes. No ad-hoc Cypher from the model.
+- Tool HTTP: `POST /api/agent/tools` (`app/api/agent/tools/route.ts`). HMAC-signed credential (`lib/agent/credential.ts`, **10 min** TTL, `GRAPH_VERSE_AGENT_SECRET`) names one `orgId` + `analysisId`; agent is never told the analysis id in prompts.
+- Inquiries persisted: `lib/agent/record.ts` → `:Inquiry` (`question`, `paths`, `threadId`, `createdAt`) via `(Analysis)-[:HAS_INQUIRY]->(Inquiry)`; index in `db/schema/001-graph-schema.cypher`.
+- **Eval:** `npm run eval:agent` — `evals/agent.mts` + `evals/agent-score.mts` (hedging without tools, plumbing leakage). Same `evals/register.mjs` loader as phase 11 evals.
+- **Env (not committed):** root `.env.local` — `GRAPH_VERSE_AGENT_SECRET`, FalkorDB, Clerk, OpenAI, LangSmith. `agent/.env` — same LangSmith vars as app if tracing agent runs, `OPENAI_API_KEY`, `MDA_INGRESS_SECRET`, `GRAPH_VERSE_APP_URL` (Next base for tool calls). Copy LangSmith key from `.env.local` into `agent/.env` for local agent tracing.
+- **Note:** `mda build` may fail on optional wasm fetch; `npm run dev` in `agent/` and app TypeScript still work.
+
 ## MCP / local
 
 - Project `.cursor/mcp.json`: FalkorDB MCP with `envFile` → `.env.local`.
@@ -107,7 +119,8 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 ## Git
 
 - Remote: `origin/main` on `ANAMASGARD/graph-verse`.
-- Do not commit `.env.local` or credentials.
+- Env files ignored explicitly: root `.gitignore` and `agent/.gitignore` list `.env`, `.env.local`, `.env.*`, with `!.env.example` allowed. Never commit secrets.
+- Monorepo: `pnpm-workspace.yaml` includes root + `agent/`; root script `npm run agent` delegates to `agent/`.
 
 ## User acceptance (manual)
 
@@ -120,3 +133,4 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - Phase 9: three checks in `specs/phase-09.md`. An Express app that only `require()`s (hackathon-starter: 37 edges, 243 imports seen, Express rail, no routes). Re-analyse so stored runs pick up `REQUIRES`. `expressjs/express` draws edges but stays the fallback adapter, because that repo does not import the `express` package.
 - Phase 10: six checks in `specs/phase-10.md` — Explain, markdown subset, cache + LangSmith zero-token second run, folder explain, stale after repo move, model role on unidentified files.
 - Phase 11: four checks in `specs/phase-11.md`. Splice check passed in the terminal. Real-trace score, role accuracy (≥30 files), and the two prompt experiments are blocked until `LANGSMITH_WORKSPACE_ID` is set and the role script is pointed at a larger checkout than this repo.
+- Phase 12: five checks in `specs/phase-12.md` — Ask with visible tool steps, follow-up context, decline on “grade the code”, every answer shows lookups, map/pane still work with agent stopped. Requires agent process + matching secrets in `.env.local` and `agent/.env`.

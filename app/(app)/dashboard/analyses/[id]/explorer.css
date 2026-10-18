@@ -240,11 +240,129 @@
   border-top: 1px solid var(--border);
 }
 
+.detail-bar {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+}
+
 .detail-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  flex: 1;
+}
+
+.detail-back,
+.detail-ask {
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.detail-back {
+  padding: 0.45rem 0.7rem;
+}
+
+.detail-ask {
+  border-left: 1px solid var(--border);
+  padding: 0 0.75rem;
+}
+
+.detail-ask[aria-pressed="true"] {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--map-select) 16%, transparent);
+}
+
+.ask-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ask-log {
+  flex: 1;
+  overflow: auto;
+  padding: 0.7rem 0.65rem;
+}
+
+.ask-empty,
+.ask-error {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.ask-error {
+  margin-top: 0.6rem;
+}
+
+.ask-user,
+.ask-assistant {
+  margin-top: 0.7rem;
+}
+
+.ask-user .ask-text {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ask-assistant .ask-text {
+  margin: 0.35rem 0 0;
+}
+
+.ask-tool {
+  margin: 0 0 0.35rem;
+  padding: 0.25rem 0.4rem;
+  border-left: 2px solid var(--map-select);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+}
+
+.ask-tool p,
+.ask-tool ul {
+  margin: 0;
+}
+
+.ask-tool ul {
+  padding-left: 1rem;
+}
+
+.ask-form {
+  display: flex;
+  gap: 0.35rem;
   flex: none;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  padding: 0.45rem;
+}
+
+.ask-form input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0.3rem 0.4rem;
+}
+
+.ask-form button {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+
+.ask-form button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .detail-tabs button {
