@@ -14,6 +14,13 @@ import {
 import type { MapRoute } from "@/lib/map/taxonomy.mts";
 import { walkFiles, type WalkDirection } from "@/lib/map/walk.mts";
 import type { HoverTarget } from "./actions.mts";
+import {
+  ExplanationPanel,
+  targetKey,
+  type ExplainTarget,
+  type ExplanationState,
+  type Freshness,
+} from "./explanation-panel";
 import { InsightsPanel } from "./insights-panel";
 
 type DetailTab = "structure" | "explanation";
@@ -29,28 +36,43 @@ type DetailPaneProps = {
   selection: MapSelection;
   hover: HoverTarget | null;
   roleColor: ReadonlyMap<string, string>;
+  analysisId: string;
+  commitSha: string;
+  modelRoles: ReadonlyMap<string, string>;
+  explanations: ReadonlyMap<string, ExplanationState>;
+  freshness: ReadonlyMap<string, Freshness>;
+  onExplain: (target: ExplainTarget) => void;
   onSelectFile: (path: string) => void;
   onHoverFile: (path: string) => void;
   onClearHover: () => void;
 };
 
-export function DetailPane({
-  repository,
-  framework,
-  importCount,
-  routes,
-  files,
-  edges,
-  folded,
-  selection,
-  hover,
-  roleColor,
-  onSelectFile,
-  onHoverFile,
-  onClearHover,
-}: DetailPaneProps) {
+export function DetailPane(props: DetailPaneProps) {
   const [tab, setTab] = useState<DetailTab>("structure");
-  const byPath = useMemo(() => new Map(files.map((file) => [file.path, file])), [files]);
+  const byPath = useMemo(() => new Map(props.files.map((file) => [file.path, file])), [props.files]);
+
+  const explainTarget = explainTargetOf(props.selection);
+  const explanation =
+    explainTarget === null ? null : (
+      <ExplanationPanel
+        target={explainTarget}
+        analysisId={props.analysisId}
+        commitSha={props.commitSha}
+        state={props.explanations.get(targetKey(explainTarget))}
+        freshness={props.freshness.get(targetKey(explainTarget))}
+        onExplain={props.onExplain}
+        isPath={(path) => byPath.has(path)}
+        renderPath={(path) => (
+          <PathButton
+            path={path}
+            hovered={pathHovered(path, props.hover, props.folded)}
+            onSelectFile={props.onSelectFile}
+            onHoverFile={props.onHoverFile}
+            onClearHover={props.onClearHover}
+          />
+        )}
+      />
+    );
 
   return (
     <aside className="explorer-detail" aria-label="Detail">
@@ -64,34 +86,23 @@ export function DetailPane({
       </div>
       <div className="detail-body" role="tabpanel">
         {tab === "explanation" ? (
-          <p className="detail-empty">No explanation yet.</p>
+          explainTarget === null ? (
+            <p className="detail-empty">Select a file or folder to explain it.</p>
+          ) : (
+            explanation
+          )
         ) : (
-          <Structure
-            repository={repository}
-            framework={framework}
-            importCount={importCount}
-            routes={routes}
-            files={files}
-            edges={edges}
-            folded={folded}
-            selection={selection}
-            hover={hover}
-            byPath={byPath}
-            roleColor={roleColor}
-            onSelectFile={onSelectFile}
-            onHoverFile={onHoverFile}
-            onClearHover={onClearHover}
-          />
+          <Structure {...props} byPath={byPath} />
         )}
       </div>
       <InsightsPanel
-        files={files}
-        edges={edges}
-        folded={folded}
-        hover={hover}
-        onSelectFile={onSelectFile}
-        onHoverFile={onHoverFile}
-        onClearHover={onClearHover}
+        files={props.files}
+        edges={props.edges}
+        folded={props.folded}
+        hover={props.hover}
+        onSelectFile={props.onSelectFile}
+        onHoverFile={props.onHoverFile}
+        onClearHover={props.onClearHover}
       />
     </aside>
   );
@@ -112,6 +123,27 @@ function Structure(props: StructureProps) {
       return unreachable;
     }
   }
+}
+
+function explainTargetOf(selection: MapSelection): ExplainTarget | null {
+  if (selection === null) return null;
+  switch (selection.kind) {
+    case "file":
+      return { kind: "file", path: selection.path };
+    case "node":
+      return { kind: "folder", dir: selection.id };
+    default: {
+      const unreachable: never = selection;
+      return unreachable;
+    }
+  }
+}
+
+function displayRole(file: DetailFile | undefined, modelRoles: ReadonlyMap<string, string>, path: string): string | null {
+  if (!file) return null;
+  const model = modelRoles.get(path);
+  if (model) return model;
+  return file.roleSource === "fallback" ? file.role : file.role;
 }
 
 function RepositorySummary({
@@ -208,11 +240,13 @@ function FileStructure({
   hover,
   byPath,
   roleColor,
+  modelRoles,
   onSelectFile,
   onHoverFile,
   onClearHover,
 }: StructureProps & { path: string }) {
   const file = byPath.get(path);
+  const role = displayRole(file, modelRoles, path);
   const lists = useMemo(() => neighbourLists(path, edges), [path, edges]);
   const [walkKind, setWalkKind] = useState<WalkKind | null>(null);
   const direction = walkDirection(walkKind);
@@ -235,10 +269,10 @@ function FileStructure({
         <div>
           <dt>Kind</dt>
           <dd>
-            {file ? (
+            {role ? (
               <>
-                <span className="explorer-swatch" style={{ background: roleColor.get(file.role) ?? "transparent" }} />
-                {file.role}
+                <span className="explorer-swatch" style={{ background: roleColor.get(role) ?? "transparent" }} />
+                {role}
               </>
             ) : null}
           </dd>
@@ -316,14 +350,20 @@ function FileStructure({
   );
 }
 
-function FolderStructure({ id, folded, roleColor }: StructureProps & { id: string }) {
+function FolderStructure({ id, folded, roleColor, modelRoles }: StructureProps & { id: string }) {
   const node = folded.nodes.find((entry) => entry.id === id);
-  const roles = roleBreakdown(node?.files ?? []);
+  const files = node?.files ?? [];
+  const roles = roleBreakdown(
+    files.map((file) => ({
+      ...file,
+      role: modelRoles.get(file.path) ?? file.role,
+    })),
+  );
 
   return (
     <div data-detail="folder" data-folder={id}>
       <h2 className="detail-name">{id}</h2>
-      <p className="detail-meta">{node?.files.length ?? 0} files</p>
+      <p className="detail-meta">{files.length} files</p>
       <ul className="detail-roles">
         {roles.map((role) => (
           <li key={role.role}>

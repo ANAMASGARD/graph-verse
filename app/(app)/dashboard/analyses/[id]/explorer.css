@@ -284,6 +284,122 @@
   font-size: 11px;
 }
 
+.explanation-panel {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.explanation-hint,
+.explanation-muted {
+  margin: 0.5rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.explanation-error {
+  word-break: break-word;
+}
+
+.explanation-action {
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--card);
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.explanation-action:hover:not(:disabled) {
+  background: var(--muted);
+}
+
+.explanation-action:disabled {
+  color: var(--muted-foreground);
+  cursor: default;
+}
+
+.explanation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.explanation-body p {
+  margin: 0;
+}
+
+.explanation-list {
+  margin: 0;
+  padding: 0 0 0 0.65rem;
+  list-style: none;
+}
+
+.explanation-list li {
+  position: relative;
+  margin: 0.1rem 0;
+}
+
+.explanation-list li::before {
+  position: absolute;
+  left: -0.55rem;
+  color: var(--muted-foreground);
+  content: "–";
+}
+
+.explanation-code {
+  padding: 0 0.15rem;
+  border-radius: 2px;
+  background: var(--muted);
+  font-family: var(--font-workspace-mono), ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.explanation-strong {
+  font-weight: 600;
+}
+
+.explanation-meta {
+  margin-top: 0.65rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.explanation-meta p {
+  margin: 0.15rem 0 0;
+}
+
+.explanation-model {
+  font-family: var(--font-workspace-mono), ui-monospace, monospace;
+}
+
+.explanation-stale {
+  margin: 0 0 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.explanation-stale-box {
+  margin-bottom: 0.65rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--muted);
+  font-size: 11px;
+}
+
+.explanation-stale-box p {
+  margin: 0;
+}
+
+.explanation-stale-box .explanation-action {
+  margin-top: 0.35rem;
+}
+
 .detail-facts {
   display: grid;
   gap: 0.15rem;

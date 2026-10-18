@@ -1,6 +1,6 @@
 # Graph Verse — session memory
 
-Last updated after phase 9 (CommonJS and Express).
+Last updated after phase 10 (Explain, cache, trace, classify).
 
 ## Product
 
@@ -20,7 +20,7 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - Cloud dev instance; app uses `.env.local`: `FALKORDB_HOST`, `PORT`, `USERNAME`, `PASSWORD`, **`FALKORDB_TLS=false`** (TLS true timed out).
 - Server-only: `lib/falkordb-config.ts`, `lib/falkordb-client.ts`, `instrumentation.ts` ping at startup.
 - Org access: `lib/falkordb-org-graph.ts` → `getOrgGraph(orgId)`.
-- Schema (version-controlled): `db/schema/001-graph-schema.cypher` — labels/relationships documented in file; indexes on Analysis.id, File.path, Project repo fields.
+- Schema (version-controlled): `db/schema/001-graph-schema.cypher` — labels/relationships documented in file; indexes on Analysis.id, File.path, Project repo fields, AiCache.key.
 - Scripts: `npm run verify:falkordb`, `npm run db:apply-schema`, `npm run db:seed` (see `scripts/`).
 - Seed env (not committed): `GRAPH_VERSE_SEED_ORG_A`, `GRAPH_VERSE_SEED_ORG_B` — two Clerk org ids; seed puts demo analyses in A (2 runs) and B (1 failed), with sample File/IMPORTS/Route/Insight on complete run.
 
@@ -37,7 +37,8 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 | **7** Fetch, parse, store a public GitHub repo | Built; user runs the paste-and-watch checks |
 | **8** Next, Nest, and React adapters; route table; rail per framework | Built; user runs the browser checks |
 | **9** `require()`, CommonJS export names, Express adapter | Built; user runs the browser checks |
-| **10+** | Not started |
+| **10** Explain, cache, trace, classify | Built; user runs acceptance in browser |
+| **11+** | Not started |
 
 ## Parser
 
@@ -51,7 +52,7 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 
 - Explorer: `components/explorer/`. Three columns stay put: rail, map, detail pane.
 - Folding (`lib/map/fold.mts`): deepest-first, threshold starts at 2, rises until under 24 nodes. Hono `src` folded to 22 nodes at threshold 5 before the preview file was deleted.
-- Detail pane: repository summary at rest; a file shows path, kind, lines, and neighbour lists; a folder shows role counts. Structure / Explanation tabs. Explanation stays empty. Hover links a path and its node.
+- Detail pane: repository summary at rest; a file shows path, kind, lines, and neighbour lists; a folder shows role counts. Structure / Explanation tabs. Explanation tab: Explain (file or folded folder), subset markdown renderer with path links, LangSmith-traced calls, FalkorDB `:AiCache`, staleness vs GitHub HEAD, Re-analyse. Fallback files get model roles (`service`, `repository`, `model`, `util`, `config`, `component`, `hook` only). Hover links a path and its node.
 - Blast radius (incoming) and dependency chain (outgoing) are a two-hop walk (`lib/map/walk.mts`), same bound as FalkorDB `*1..2`. No request on click.
 - Insights (`lib/map/insights.mts`), collapsed at the bottom of the pane: nothing-imports (pages, routes, layouts, middleware, and config are excluded), unusual fan-in (mean + 2 standard deviations), import cycles (iterative), files over 1000 lines.
 - Rail order comes from the framework: Next.js is Page routes, API endpoints, Server actions, then the layers and plumbing. NestJS is Controllers, Services, Modules, Entities. Express is Routers, Controllers, Services, Models, Middleware. A zero stays put. Anything the adapter didn't name is `file` at the end. Click still dims every other file.
@@ -76,6 +77,15 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - Shell main is full-bleed. The dashboard page adds `.workspace-container`. The map fills the space under the header.
 - Table: Repository, State, Commit, Started, Finished. Status glyphs ○ ◐ ● ⊗. Repository name links to the analysis. A second dashboard tab follows stage changes through the same event stream.
 
+## AI (phase 10)
+
+- Single client: `lib/ai/client.ts` (`wrapOpenAI`, pinned models in `MODELS`). Tasks in `lib/ai/tasks.ts` — cache read **inside** `traceable()` so hits show as runs with no model call.
+- Explain / classify prompts: `lib/ai/prompts.ts` (`PROMPT_VERSION` in cache key). Server actions: `app/(app)/dashboard/analyses/[id]/actions.ts` (explain file/folder, GitHub HEAD staleness, `reanalyseAction`).
+- FalkorDB `:AiCache` nodes: `lib/graph/ai-cache.ts`. Context from stored graph only: `lib/graph/explain-context.ts`. Source at analysed commit: `lib/github/content.ts`.
+- UI: `explanation-panel.tsx`, `explanation-text.tsx`; explanations kept in client state per file/folder key; pane shows tracing status when LangSmith is off.
+- Env in `.env.local` (not committed): `OPENAI_API_KEY`; optional tracing `LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` (EU: `https://eu.api.smith.langchain.com`), `LANGSMITH_PROJECT=graph-verse`.
+- Deps: `openai`, `langsmith`. After schema change, run `npm run db:apply-schema` for the org graph(s).
+
 ## MCP / local
 
 - Project `.cursor/mcp.json`: FalkorDB MCP with `envFile` → `.env.local`.
@@ -95,3 +105,4 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 - Phase 7: paste a public URL, paste it again, paste a missing repo, watch the stage from a second dashboard tab, and confirm the coverage banner names a percent under 95. Sign-in blocked the agent from running those clicks. Archive download and the graph write were checked from the terminal.
 - Phase 8: five checks in `specs/phase-08.md` — Next and Nest rails and route table, three route spot-checks, generic fallback, `nextjs` only in the adapter. Re-analyse (new URL or delete the old analysis) so stored runs pick up adapters and routes.
 - Phase 9: three checks in `specs/phase-09.md`. An Express app that only `require()`s (hackathon-starter: 37 edges, 243 imports seen, Express rail, no routes). Re-analyse so stored runs pick up `REQUIRES`. `expressjs/express` draws edges but stays the fallback adapter, because that repo does not import the `express` package.
+- Phase 10: six checks in `specs/phase-10.md` — Explain, markdown subset, cache + LangSmith zero-token second run, folder explain, stale after repo move, model role on unidentified files.

@@ -8,6 +8,7 @@
 //                skipReason, skipDetail, role, roleSource, exports
 //   :Route       id, method, path, line
 //   :Insight     id, body, createdAt
+//   :AiCache      key, task, model, body, createdAt
 //
 // Relationships
 //   (Project)-[:HAS_ANALYSIS]->(Analysis)     one analysis per project
@@ -23,3 +24,4 @@ CREATE INDEX FOR (a:Analysis) ON (a.id);
 CREATE INDEX FOR (f:File) ON (f.path);
 CREATE INDEX FOR (p:Project) ON (p.repoOwner);
 CREATE INDEX FOR (p:Project) ON (p.repoName);
+CREATE INDEX FOR (c:AiCache) ON (c.key);

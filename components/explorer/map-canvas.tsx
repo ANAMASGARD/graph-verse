@@ -38,16 +38,17 @@ type MapCanvasProps = {
   hover: HoverTarget | null;
   category: string | null;
   roleColor: string;
+  modelRoles: ReadonlyMap<string, string>;
   onClear: () => void;
 };
 
-function MapSurface({ folded, open, selection, hover, category, roleColor, onClear }: MapCanvasProps) {
+function MapSurface({ folded, open, selection, hover, category, roleColor, modelRoles, onClear }: MapCanvasProps) {
   const { fitView, getZoom } = useReactFlow();
   const previousOpen = useRef<ReadonlySet<string>>(new Set());
   const openKey = [...open].sort().join("\n");
 
   const labels = useMemo(() => labelsOnScreen(folded, open), [folded, open]);
-  const matched = useMemo(() => matchCounts(folded, category), [category, folded]);
+  const matched = useMemo(() => matchCounts(folded, category, modelRoles), [category, folded, modelRoles]);
   const placed = useMemo(() => layoutFolders(folded, open, labels, matched), [folded, labels, matched, open]);
   const drawn = useMemo(() => visualEdges(folded, open), [folded, open]);
   const shown = useMemo(() => shownFiles(folded, open), [folded, open]);
@@ -160,11 +161,18 @@ export function MapCanvas(props: MapCanvasProps) {
   );
 }
 
-function matchCounts(folded: FoldResult, category: string | null): ReadonlyMap<string, number> | null {
+function matchCounts(
+  folded: FoldResult,
+  category: string | null,
+  modelRoles: ReadonlyMap<string, string>,
+): ReadonlyMap<string, number> | null {
   if (category === null) return null;
   const counts = new Map<string, number>();
   for (const node of folded.nodes) {
-    counts.set(node.id, node.files.filter((file) => file.role === category).length);
+    counts.set(
+      node.id,
+      node.files.filter((file) => (modelRoles.get(file.path) ?? file.role) === category).length,
+    );
   }
   return counts;
 }
