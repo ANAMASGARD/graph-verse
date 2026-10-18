@@ -1,0 +1,39 @@
+---
+description: FalkorDB graph database development and MCP tools
+alwaysApply: true
+---
+
+# FalkorDB Development Rules
+
+This project uses FalkorDB as its graph database. One graph per Clerk organization.
+
+## Database Access
+
+- Prefer the official FalkorDB MCP server for database inspection and Cypher queries.
+- Use the Cursor terminal and `docker exec falkordb redis-cli` as a CLI fallback.
+- Do not claim database operations succeeded without checking their results.
+- Never expose credentials, tokens, or connection strings in code or logs.
+- Application code talks to FalkorDB only on the server; the browser never connects.
+
+## Graph Modeling
+
+- Use labeled nodes and explicitly typed relationships (`IMPORTS`, `RE_EXPORTS`, etc.).
+- Prefer MERGE for operations that must be idempotent.
+- Use parameterized queries through the official client SDK.
+- Design indexes for frequently matched and filtered properties.
+- Follow FalkorDB's supported OpenCypher syntax.
+
+## Query Development
+
+- Inspect existing graphs and schema before proposing changes.
+- Start with read-only queries.
+- Use LIMIT for exploratory queries.
+- Explain planned destructive operations before execution.
+- Never delete graphs or bulk-delete records without explicit approval.
+- Review expensive queries using EXPLAIN or supported profiling tools.
+
+## Validation
+
+- Test queries against the running FalkorDB instance.
+- Verify node and relationship counts after writes.
+- Do not substitute mocked success messages for actual database results.
