@@ -1,4 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import { ui } from "@clerk/ui";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Script from "next/script";
@@ -48,12 +49,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           {themeBootScript}
         </Script>
         <ClerkProvider
+          ui={ui}
           appearance={clerkAppearance}
           taskUrls={{ "choose-organization": "/session-tasks/choose-organization" }}
           signInFallbackRedirectUrl={DASHBOARD_PATH}
           signUpFallbackRedirectUrl={DASHBOARD_PATH}
-          signInForceRedirectUrl={DASHBOARD_PATH}
-          signUpForceRedirectUrl={DASHBOARD_PATH}
         >
           {children}
         </ClerkProvider>

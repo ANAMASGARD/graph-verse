@@ -1,3 +1,5 @@
+[![Graph Verse demo](https://img.youtube.com/vi/hz-TFz4LJ4I/maxresdefault.jpg)](https://youtu.be/hz-TFz4LJ4I)
+
 # Graph Verse
 
 Paste a public TypeScript or JavaScript repository and Graph Verse draws it as a dependency map. Every box and every line comes from parsing the code. FalkorDB stores that map, one graph per Clerk organization, and every lookup — neighbours, blast radius, routes, the agent — is a fixed OpenCypher query over those relationships.

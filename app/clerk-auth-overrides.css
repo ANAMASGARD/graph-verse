@@ -22,11 +22,7 @@
   background-color: #ffdc58 !important;
 }
 
-.cl-socialButtonsProviderIcon,
-.cl-socialButtonsIconButton svg,
-.cl-socialButtonsIconButton img,
-.cl-socialButtonsBlockButton svg,
-.cl-socialButtonsBlockButton img {
+.cl-socialButtonsProviderIcon {
   opacity: 1 !important;
   filter: none !important;
   width: 1.35rem !important;

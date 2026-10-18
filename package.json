@@ -15,7 +15,7 @@
     "eval:roles": "node --import ./evals/register.mjs evals/roles.mts",
     "eval:prompts": "node --import ./evals/register.mjs evals/prompts.mts",
     "eval:agent": "node --import ./evals/register.mjs evals/agent.mts",
-    "agent": "npm --prefix agent run dev"
+    "agent": "NPM_CONFIG_ALLOW_REMOTE=all npm --prefix agent run dev"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.17",

@@ -76,9 +76,19 @@ function toAnalysisListItem(row: RawAnalysisRow): AnalysisListItem | null {
   };
 }
 
+function isEmptyGraph(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("Invalid graph operation on empty key");
+}
+
 export async function listAnalysesForOrg(orgId: string): Promise<AnalysisListItem[]> {
   const graph = await getOrgGraph(orgId);
-  const reply = await graph.roQuery(LIST_ANALYSES_CYPHER);
+  let reply: unknown;
+  try {
+    reply = await graph.roQuery(LIST_ANALYSES_CYPHER);
+  } catch (error) {
+    if (!isEmptyGraph(error)) throw error;
+    return [];
+  }
   const raw = reply as {
     headers?: string[];
     data?: TabularGraphData;

@@ -43,7 +43,7 @@ type MapCanvasProps = {
 };
 
 function MapSurface({ folded, open, selection, hover, category, roleColor, modelRoles, onClear }: MapCanvasProps) {
-  const { fitView, getZoom } = useReactFlow();
+  const { fitView } = useReactFlow();
   const previousOpen = useRef<ReadonlySet<string>>(new Set());
   const openKey = [...open].sort().join("\n");
 
@@ -122,19 +122,14 @@ function MapSurface({ folded, open, selection, hover, category, roleColor, model
 
   useLayoutEffect(() => {
     const added = [...open].filter((id) => !previousOpen.current.has(id));
+    const closed = [...previousOpen.current].filter((id) => !open.has(id));
     previousOpen.current = open;
-    if (added.length === 0) return;
-    const zoom = getZoom();
+    if (added.length === 0 && closed.length === 0) return;
     const frame = requestAnimationFrame(() => {
-      void fitView({
-        nodes: added.map((id) => ({ id })),
-        padding: 0.2,
-        duration: 0,
-        maxZoom: zoom,
-      });
+      void fitView({ padding: 0.15, duration: 0, maxZoom: 1 });
     });
     return () => cancelAnimationFrame(frame);
-  }, [fitView, getZoom, open, openKey]);
+  }, [fitView, open, openKey]);
 
   return (
     <ReactFlow
