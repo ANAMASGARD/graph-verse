@@ -86,19 +86,22 @@ function MapSurface({ folded, open, selection, hover, category, roleColor, model
             !nodeHover &&
             !visible.some((file) => rowHover(file.path)),
           roleColor,
-          rows: visible.map((file) => ({
-            path: file.path,
-            label: labels.get(file.path) ?? file.path,
-            selected: selection?.kind === "file" && selection.path === file.path,
-            hovered: rowHover(file.path),
-            dimmed:
-              (rowDimmed(selection, file.path, folded) || (nodeMatched !== null && nodeMatched > 0 && file.role !== category)) &&
-              !rowHover(file.path),
-          })),
+          rows: visible.map((file) => {
+            const role = modelRoles.get(file.path) ?? file.role;
+            return {
+              path: file.path,
+              label: labels.get(file.path) ?? file.path,
+              selected: selection?.kind === "file" && selection.path === file.path,
+              hovered: rowHover(file.path),
+              dimmed:
+                (rowDimmed(selection, file.path, folded) || (nodeMatched !== null && nodeMatched > 0 && role !== category)) &&
+                !rowHover(file.path),
+            };
+          }),
         },
       };
     });
-  }, [category, folded, hover, labels, matched, open, placed, roleColor, selection]);
+  }, [category, folded, hover, labels, matched, modelRoles, open, placed, roleColor, selection]);
 
   const edges = useMemo<Edge[]>(() => {
     return drawn.map((edge) => {

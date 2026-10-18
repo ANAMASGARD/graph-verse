@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition, type ReactNode } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 
 import type { ExplainResult } from "@/app/(app)/dashboard/analyses/[id]/actions";
 import { reanalyseAction } from "@/app/(app)/dashboard/analyses/[id]/actions";
@@ -105,6 +105,7 @@ function FreshnessNote(props: {
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const freshness = props.freshness;
   if (!freshness || freshness.status === "current") return null;
   const analysed = <span className="explanation-model">{props.commitSha.slice(0, 7)}</span>;
@@ -150,13 +151,19 @@ function FreshnessNote(props: {
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
+            setError(null);
             const result = await reanalyseAction(props.analysisId);
-            if (!result.error) router.refresh();
+            if (result.error) {
+              setError(result.error);
+              return;
+            }
+            router.refresh();
           })
         }
       >
         {pending ? "Starting…" : "Re-analyse"}
       </button>
+      {error ? <p className="explanation-muted explanation-error">{error}</p> : null}
     </div>
   );
 }

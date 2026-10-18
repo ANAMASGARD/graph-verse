@@ -131,6 +131,56 @@ export async function createQueuedAnalysis(
   });
 }
 
+/** Wipe the stored parse and mark the same analysis queued, so a re-run replaces it. */
+export async function requeueAnalysis(orgId: string, analysisId: string): Promise<"ok" | "missing" | "busy"> {
+  const existing = await loadAnalysis(orgId, analysisId);
+  if (!existing) return "missing";
+  if (existing.status === "queued" || existing.status === "running") return "busy";
+
+  const graph = await getOrgGraph(orgId);
+  const id = analysisId;
+  await graph.query(
+    `
+    MATCH (a:Analysis {id: $id})-[:HAS_FILE]->(f:File)
+    DETACH DELETE f
+    `,
+    { params: { id } },
+  );
+  await graph.query(
+    `
+    MATCH (a:Analysis {id: $id})-[:HAS_ROUTE]->(r:Route)
+    DETACH DELETE r
+    `,
+    { params: { id } },
+  );
+  await graph.query(
+    `
+    MATCH (a:Analysis {id: $id})-[:HAS_INSIGHT]->(i:Insight)
+    DETACH DELETE i
+    `,
+    { params: { id } },
+  );
+  const message = "Waiting to fetch.";
+  await graph.query(
+    `
+    MATCH (a:Analysis {id: $id})
+    SET a.status = 'queued',
+        a.stage = 'fetch',
+        a.stageMessage = $message,
+        a.error = null,
+        a.startedAt = null,
+        a.finishedAt = null,
+        a.coverage = null,
+        a.framework = null,
+        a.importCount = 0,
+        a.routeCount = 0
+    `,
+    { params: { id, message } },
+  );
+  await publishProgress(analysisId, { status: "queued", stage: "fetch", message });
+  return "ok";
+}
+
 export async function recordStage(orgId: string, analysisId: string, update: StageUpdate): Promise<void> {
   const graph = await getOrgGraph(orgId);
   const now = new Date().toISOString();

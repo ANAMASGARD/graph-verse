@@ -300,7 +300,7 @@ function addNeighbour(
   const roleValue = row[`${prefix}Role`];
   const exportsValue = row[`${prefix}Exports`];
   const exports = stringArray(exportsValue) ?? [];
-  const role = typeof roleSource === "string" && roleForConvention(roleSource) && typeof roleValue === "string" ? roleValue : null;
+  const role = typeof roleSource === "string" && roleForModel(roleSource) && typeof roleValue === "string" ? roleValue : null;
   const existing = into.get(otherPath);
   if (!existing) {
     into.set(otherPath, { path: otherPath, role, exports, kinds: [kind], typeOnly });
@@ -339,10 +339,6 @@ function cypherKindToPrompt(kind: string): PromptEdgeKind | null {
     default:
       return null;
   }
-}
-
-function roleForConvention(roleSource: string): boolean {
-  return roleSource !== "fallback" && roleSource !== "model";
 }
 
 function roleForModel(roleSource: string): boolean {

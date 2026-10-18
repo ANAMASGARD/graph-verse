@@ -1,6 +1,6 @@
 # Graph Verse — session memory
 
-Last updated after phase 10 (Explain, cache, trace, classify).
+Last updated after phase 10 completion pass (actions, re-analyse, fixes).
 
 ## Product
 
@@ -37,7 +37,7 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 | **7** Fetch, parse, store a public GitHub repo | Built; user runs the paste-and-watch checks |
 | **8** Next, Nest, and React adapters; route table; rail per framework | Built; user runs the browser checks |
 | **9** `require()`, CommonJS export names, Express adapter | Built; user runs the browser checks |
-| **10** Explain, cache, trace, classify | Built; user runs acceptance in browser |
+| **10** Explain, cache, trace, classify | Built and pushed; user runs acceptance in browser |
 | **11+** | Not started |
 
 ## Parser
@@ -80,11 +80,13 @@ Next.js 16 App Router app that maps public GitHub repos via parsing + FalkorDB. 
 ## AI (phase 10)
 
 - Single client: `lib/ai/client.ts` (`wrapOpenAI`, pinned models in `MODELS`). Tasks in `lib/ai/tasks.ts` — cache read **inside** `traceable()` so hits show as runs with no model call.
-- Explain / classify prompts: `lib/ai/prompts.ts` (`PROMPT_VERSION` in cache key). Server actions: `app/(app)/dashboard/analyses/[id]/actions.ts` (explain file/folder, GitHub HEAD staleness, `reanalyseAction`).
-- FalkorDB `:AiCache` nodes: `lib/graph/ai-cache.ts`. Context from stored graph only: `lib/graph/explain-context.ts`. Source at analysed commit: `lib/github/content.ts`.
-- UI: `explanation-panel.tsx`, `explanation-text.tsx`; explanations kept in client state per file/folder key; pane shows tracing status when LangSmith is off.
-- Env in `.env.local` (not committed): `OPENAI_API_KEY`; optional tracing `LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` (EU: `https://eu.api.smith.langchain.com`), `LANGSMITH_PROJECT=graph-verse`.
-- Deps: `openai`, `langsmith`. After schema change, run `npm run db:apply-schema` for the org graph(s).
+- Explain / classify prompts: `lib/ai/prompts.ts` (`PROMPT_VERSION` in cache key). Server actions: `app/(app)/dashboard/analyses/[id]/actions.ts` — `explainFileAction`, `explainFolderAction`, `repositoryHeadAction`, `fileAtHeadAction` (sha256 vs stored hash), `reanalyseAction`.
+- FalkorDB `:AiCache` nodes: `lib/graph/ai-cache.ts`. Context from stored graph only: `lib/graph/explain-context.ts` (neighbour roles include adapter + **model** roles, not only convention). Source at analysed commit: `lib/github/content.ts` (`fetchFileAt`, `resolveHeadCommit`).
+- **Re-analyse:** `requeueAnalysis` in `lib/graph/analysis-store.ts` DETACH DELETEs `:File`, `:Route`, `:Insight` for the analysis, resets Analysis to `queued`/`fetch`, then `after()` → `runAnalysis` on same id.
+- UI: `explanation-panel.tsx` (staleness + Re-analyse, tracing line, label outcome), `explanation-text.tsx` (inline code, bullets, bold; paths → map selection). Client `explorer.tsx` keeps explanations and freshness per file/folder key. Map category dim uses `modelRoles` in `map-canvas.tsx`.
+- Env in `.env.local` (not committed): `OPENAI_API_KEY`; optional tracing `LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY`, `LANGSMITH_ENDPOINT` (EU: `https://eu.api.smith.langchain.com`), `LANGSMITH_PROJECT=graph-verse`. Pinned models verified listed on OpenAI account.
+- Deps: `openai`, `langsmith`. AiCache index applied via `npm run db:apply-schema --from-env` on seed org graphs.
+- **Checks:** `tsc` and `npm run build` pass. `npm run lint` fails: `eslint-config-next@14` lacks ESM export for `core-web-vitals` that `eslint.config.mjs` imports (Next 16 / ESLint 9 mismatch; not fixed in phase 10).
 
 ## MCP / local
 
